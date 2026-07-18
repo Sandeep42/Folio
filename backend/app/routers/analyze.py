@@ -214,17 +214,12 @@ async def holding_detail(req: AnalyzeRequest, isin: str, folio: str | None = Non
 
     current = h.last_price * h.quantity if h.last_price else None
 
-    # Build cash flows scoped to this folio's lots.
-    # Transaction objects don't carry folio, so we match by the lot buy-dates
-    # that belong to this specific holding to avoid mixing other folios.
-    lot_dates = {str(l.buy_date) for l in h.lots if l.source != "cas"}
-
+    # Build cash flows scoped to this exact holding (isin + normalised
+    # folio) — matching on isin+buy-date alone let one folio's transactions
+    # bleed into another folio's XIRR whenever two folios of the same fund
+    # happened to share a buy-date.
     def txn_matches(t) -> bool:
-        if t.isin != isin:
-            return False
-        if lot_dates:
-            return str(t.txn_date) in lot_dates or t.description == "SELL"
-        return True
+        return _key(t.isin, t.folio) == key
 
     flows = [(t.txn_date, t.amount) for t in txns if txn_matches(t)]
     if not flows and h.lots and any(l.source != "cas" for l in h.lots):
