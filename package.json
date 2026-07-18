@@ -1,0 +1,14 @@
+{
+  "name": "cas-analyzer",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "tauri": "tauri",
+    "build-sidecar": "python3 backend/build_sidecar.py",
+    "tauri:dev": "npm run build-sidecar && tauri dev",
+    "tauri:build": "npm run build-sidecar && tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

@@ -1,0 +1,20 @@
+# Python backend
+backend/.venv
+backend/build
+backend/dist
+backend/__pycache__
+**/__pycache__
+backend/.pytest_cache
+.pytest_cache
+
+# Node / frontend
+node_modules
+frontend/dist
+
+# Tauri / Rust
+src-tauri/target
+src-tauri/gen/schemas
+src-tauri/binaries
+
+# OS
+.DS_Store

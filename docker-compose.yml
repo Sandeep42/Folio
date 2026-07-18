@@ -1,0 +1,30 @@
+services:
+  backend:
+    build: ./backend
+    container_name: cas-backend
+    expose:
+      - "8000"
+    restart: unless-stopped
+    environment:
+      # Set ALLOWED_ORIGIN to your domain when hosting publicly, e.g.:
+      # ALLOWED_ORIGIN: "https://yourdomain.com"
+      ALLOWED_ORIGIN: "*"
+      # Uncomment and set a random string to require an API key:
+      # API_KEY: "change-me-to-a-random-secret"
+      # Set to "1" to enable /docs endpoint:
+      # DOCS: "1"
+
+  frontend:
+    build: ./frontend
+    container_name: cas-frontend
+    ports:
+      - "8080:80"
+      # Uncomment when you have a TLS cert:
+      # - "443:443"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    volumes:
+      # Mount Let's Encrypt certs when ready:
+      # - /etc/letsencrypt:/etc/letsencrypt:ro
+      []
