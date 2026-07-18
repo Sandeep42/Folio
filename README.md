@@ -70,6 +70,11 @@ computer, with no browser tab, no sign-in, and no account to create.
 3. **Browse your portfolio.** Check current value, XIRR, and allocation; use
    the tax-harvesting tab before filing.
 
+Folio's Import page actually has five upload options (CAS, CAMS history,
+KFIN history, Zerodha tradebook, generic tradebook) — see
+**[UPLOADING.md](UPLOADING.md)** for exactly where to get each file and what
+each one does.
+
 ## Privacy
 
 Nothing about your portfolio ever leaves your computer except two things it
