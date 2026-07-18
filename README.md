@@ -54,6 +54,17 @@ computer, with no browser tab, no sign-in, and no account to create.
 > First launch takes a few seconds longer than usual while it starts its
 > local backend — that's normal.
 
+**macOS "Apple could not verify this app" / can't open it:** Folio isn't
+signed with a paid Apple Developer ID, so Gatekeeper blocks it on first
+launch. Right-click the app → **Open** (instead of double-clicking), then
+confirm in the dialog that appears — you only need to do this once. If
+macOS instead says the app **"is damaged"**, that specific wording means
+Gatekeeper doesn't trust the download at all rather than just warning about
+an unknown developer; run this once in Terminal, then open it normally:
+```bash
+xattr -cr /Applications/Folio.app
+```
+
 ## Using it
 
 1. **Upload your CAS PDF.** Get it from the
