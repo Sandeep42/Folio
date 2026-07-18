@@ -60,6 +60,25 @@ export default function App() {
   const [q, setQ]                 = useState('')
   const [busy, setBusy]           = useState(false)
   const [error, setError]         = useState('')
+  const [backendReady, setBackendReady] = useState(false)
+
+  // The Tauri desktop build's backend is a sidecar process that takes a few
+  // seconds to cold-start (PyInstaller onefile extraction) — poll until it
+  // actually responds instead of letting early requests fail with "Load failed".
+  useEffect(() => {
+    let cancelled = false
+    const poll = async () => {
+      while (!cancelled) {
+        try {
+          const r = await fetch(`${API_BASE}/api/health`)
+          if (r.ok) { setBackendReady(true); return }
+        } catch { /* not up yet */ }
+        await new Promise(res => setTimeout(res, 400))
+      }
+    }
+    poll()
+    return () => { cancelled = true }
+  }, [])
 
   useEffect(() => { saveState(state) }, [state])
 
@@ -77,7 +96,7 @@ export default function App() {
     finally { setBusy(false) }
   }, [state.holdings, state.trades, state.ltcgRealized])
 
-  useEffect(() => { compute(false) }, [compute])
+  useEffect(() => { if (backendReady) compute(false) }, [compute, backendReady])
 
   const mergeHoldings = (incoming) =>
     setState(s => {
@@ -118,6 +137,18 @@ export default function App() {
   const harvestCount = result?.harvest?.suggestions?.filter(x => x.kind === 'gain_harvest').length || 0
   const hasData = state.holdings.length > 0
   const views = filterViews(result?.holdings || [], holdingTab, q)
+
+  if (!backendReady) {
+    return (
+      <div className="app-shell">
+        <div className="main-area">
+          <div className="page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+            <p className="note">Starting up…</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   // If a fund is selected → show full detail page
   if (selected) {
