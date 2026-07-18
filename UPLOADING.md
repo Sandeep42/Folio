@@ -39,6 +39,17 @@ tells you what you own right now, not when you bought it, so returns shown
 immediately after this step alone are approximate (Folio will say so on
 screen).
 
+> **If you only hold mutual funds and have no demat account**, NSDL/CDSL may
+> not issue you a CAS at all. CAMS and KFintech jointly offer a
+> [Consolidated Account Statement](https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement)
+> covering funds serviced by both RTAs as a fallback — but note Folio's CAS
+> parser is built specifically for the NSDL/CDSL PDF format, so this
+> alternative statement isn't guaranteed to parse cleanly in upload box #1.
+> Use it as a reference for your holdings, and rely on #2/#3 below for
+> transaction history either way.
+>
+> ![CAMS+KFintech Consolidated Account Statement form](docs/screenshots/upload-sources/cams-consolidated.png)
+
 ---
 
 ## 2 · CAMS history (XLS)
@@ -47,11 +58,30 @@ screen).
 serviced by CAMS (Aditya Birla Sun Life, DSP, HDFC, ICICI Prudential, Kotak,
 SBI, Parag Parikh, Navi, and others).
 
-**Where to get it:** [mycams.com](https://www.mycams.com/) → *Mailback
-Services* → *Transaction Statement* → choose **Detailed** statement type and
-**Since Inception** as the period → submit. CAMS emails you a password-
-protected XLS (password is usually your PAN or date of birth — check the
-email for the exact rule).
+**Where to get it:** [CAMS Transaction Details Statement](https://www.camsonline.com/Investors/Statements/Transaction-Details-Statement):
+
+![CAMS Transaction Details Statement form](docs/screenshots/upload-sources/cams-transaction-details.png)
+
+1. **Email** — required (statement gets emailed here). PAN is optional.
+2. **Fund Option** — leave as **Mutual Fund**.
+3. **Fund Selection** — open the dropdown and explicitly select **All**
+   (or select every fund you hold individually) — it isn't included by
+   default if left blank.
+4. **From Date / To Date** — set From Date as early as possible (e.g. your
+   account opening date, or just `01-01-2000` to be safe) and To Date to
+   today, so you get your complete history in one file.
+5. **Folio No** — leave blank to include all folios.
+6. **Statement Format** — choose **Excel** (Folio's parser expects the XLS
+   format; Text/JSON aren't supported).
+7. Set a **Password** and **Confirm Password** — this protects the emailed
+   file.
+
+CAMS emails the password-protected XLS to the address you entered.
+
+**Before uploading:** Folio can't open a password-protected Excel file
+directly. Open the XLS in Excel/Google Sheets/LibreOffice using the password
+you set, then **save a copy without a password** (File → Save As, leave the
+password field blank) — upload that unprotected copy to Folio.
 
 **Requires:** Upload your CAS first (#1) — this file has no ISIN column, so
 Folio matches each transaction to a fund by folio number, and needs your CAS
@@ -68,8 +98,20 @@ tax-harvest lots become accurate for those holdings.
 **What it is:** The same idea as #2, but for funds serviced by KFintech
 (Axis Mutual Fund, UTI, Mirae Asset, Nippon India, Quant, and others).
 
-**Where to get it:** [kfintech.com](https://www.kfintech.com/) → *Investor
-Services* → *Transaction Statement* → **Since Inception**.
+**Where to get it:** [KFintech Investor Transaction Report](https://mfs.kfintech.com/investor/General/InvestorTransactionReport):
+
+![KFintech Investor Transaction Report form](docs/screenshots/upload-sources/kfintech-transaction-report.png)
+
+1. Choose **Mail Id** or **PAN** to identify yourself, and fill in the
+   matching field. This only works if that email/PAN is already registered
+   against your folios with KFintech.
+2. Set a password (required — protects the emailed statement).
+3. Complete the "I'm not a robot" captcha, then **Submit**.
+
+KFintech emails the password-protected statement to your registered email.
+
+**Before uploading:** Same as CAMS above — open the file with the password
+you set and save an unprotected copy before uploading it to Folio.
 
 **Requires:** Nothing extra — this file already includes each transaction's
 ISIN directly, so it doesn't need your CAS loaded first (though uploading
