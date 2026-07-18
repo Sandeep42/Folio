@@ -1,4 +1,6 @@
+import { useState } from 'react'
 import { inr, pct } from '../api'
+import Modal from './Modal'
 
 const COLS = [
   ['name','Holding'],['quantity','Qty'],['avg_cost','Avg cost'],
@@ -8,21 +10,26 @@ const COLS = [
 
 const CBT_COLORS = { zero: 'var(--turmeric)', unknown: 'var(--ink-soft)' }
 
+const CBT_OPTIONS = [
+  { value: 'normal', label: 'Normal', hint: 'Bought at market' },
+  { value: 'zero', label: 'ESOP / RSU at ₹0', hint: 'Cost genuinely zero, included in XIRR' },
+  { value: 'unknown', label: 'Unknown', hint: 'Gift/inherited — excluded from P&L & XIRR' },
+]
+
 export default function HoldingsTable({ holdings, onMapSymbol, onSetCostBasis, onSelect }) {
-  const mapSymbol = (h) => {
-    const s = window.prompt(`Yahoo Finance ticker for ${h.name}?\n(e.g. INFY.NS, TCS.BO)`)
-    if (s) onMapSymbol(h.isin, s.trim().toUpperCase())
+  const [tickerModal, setTickerModal] = useState(null)   // holding, or null
+  const [tickerInput, setTickerInput] = useState('')
+  const [cbtModal, setCbtModal] = useState(null)          // holding, or null
+
+  const openTickerModal = (h) => { setTickerInput(h.symbol || ''); setTickerModal(h) }
+  const saveTicker = () => {
+    const s = tickerInput.trim().toUpperCase()
+    if (s) onMapSymbol(tickerModal.isin, s)
+    setTickerModal(null)
   }
 
-  const setCostBasis = (h) => {
-    const cur = h.cost_basis_type || 'normal'
-    const choice = window.prompt(
-      `Cost basis for ${h.name}:\n1 = Normal (bought at market)\n2 = ESOP / RSU at ₹0\n3 = Unknown (gift/inherited — exclude from P&L & XIRR)`,
-      cur === 'zero' ? '2' : cur === 'unknown' ? '3' : '1'
-    )
-    const map = { '1': 'normal', '2': 'zero', '3': 'unknown' }
-    if (map[choice]) onSetCostBasis(h.isin, map[choice])
-  }
+  const openCbtModal = (h) => setCbtModal(h)
+  const chooseCbt = (value) => { onSetCostBasis(cbtModal.isin, value); setCbtModal(null) }
 
   if (!holdings.length) {
     return <div style={{ padding: '40px 20px', textAlign: 'center', color: 'var(--ink-soft)', fontSize: 13 }}>No holdings match the current filter.</div>
@@ -57,10 +64,12 @@ export default function HoldingsTable({ holdings, onMapSymbol, onSetCostBasis, o
                   <div className="tags" style={{ marginTop: 4 }}>
                     {h.asset_type === 'stock' && (
                       <>
-                        <button className="btn" style={{ fontSize: 10, padding: '1px 7px' }} onClick={() => mapSymbol(h)}>
+                        <button className="btn" style={{ fontSize: 10, padding: '1px 7px' }}
+                          onClick={e => { e.stopPropagation(); openTickerModal(h) }}>
                           {h.symbol ? '✎ ticker' : 'map ticker'}
                         </button>
-                        <button className="btn" style={{ fontSize: 10, padding: '1px 7px' }} onClick={() => setCostBasis(h)}>
+                        <button className="btn" style={{ fontSize: 10, padding: '1px 7px' }}
+                          onClick={e => { e.stopPropagation(); openCbtModal(h) }}>
                           cost basis
                         </button>
                       </>
@@ -89,6 +98,41 @@ export default function HoldingsTable({ holdings, onMapSymbol, onSetCostBasis, o
           Holdings marked "unknown cost" are excluded from invested total, P&L and portfolio XIRR.
           Current value is still counted in the portfolio total.
         </p>
+      )}
+
+      {tickerModal && (
+        <Modal title={`Yahoo Finance ticker — ${tickerModal.name}`} onClose={() => setTickerModal(null)}>
+          <p className="note" style={{ marginTop: 0 }}>e.g. INFY.NS, TCS.BO</p>
+          <input type="text" autoFocus value={tickerInput}
+            onChange={e => setTickerInput(e.target.value)}
+            onKeyDown={e => e.key === 'Enter' && saveTicker()}
+            style={{ width: '100%', padding: '7px 10px', border: '1px solid var(--line)',
+              borderRadius: 4, fontFamily: 'var(--mono)', fontSize: 13, marginBottom: 14 }} />
+          <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+            <button className="btn" onClick={() => setTickerModal(null)}>Cancel</button>
+            <button className="btn primary" onClick={saveTicker}>Save</button>
+          </div>
+        </Modal>
+      )}
+
+      {cbtModal && (
+        <Modal title={`Cost basis — ${cbtModal.name}`} onClose={() => setCbtModal(null)}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {CBT_OPTIONS.map(o => (
+              <button key={o.value} className="btn"
+                style={{
+                  justifyContent: 'flex-start', textAlign: 'left', padding: '10px 12px',
+                  border: `1px solid ${(cbtModal.cost_basis_type || 'normal') === o.value ? 'var(--green)' : 'var(--line)'}`,
+                }}
+                onClick={() => chooseCbt(o.value)}>
+                <div>
+                  <div style={{ fontWeight: 600 }}>{o.label}</div>
+                  <div style={{ fontSize: 11, color: 'var(--ink-soft)', fontWeight: 400 }}>{o.hint}</div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </Modal>
       )}
     </div>
   )
