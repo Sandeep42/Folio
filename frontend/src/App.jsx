@@ -9,18 +9,20 @@ import ElssTracker from './components/ElssTracker'
 import Allocation from './components/Allocation'
 import FundPnl from './components/FundPnl'
 import RollingReturns from './components/RollingReturns'
+import FireTracker from './components/FireTracker'
 
 const NAV = [
   { id: 'holdings',   label: 'Holdings',       icon: 'ti-list',        section: 'Portfolio' },
   { id: 'harvest',    label: 'Tax harvest',    icon: 'ti-scissors',    section: null, badge: true },
   { id: 'gains',      label: 'Capital gains',  icon: 'ti-receipt-tax', section: null },
   { id: 'elss',       label: 'ELSS tracker',   icon: 'ti-lock',        section: null },
+  { id: 'fire',       label: 'FIRE',           icon: 'ti-flame',       section: null },
   { id: 'import',     label: 'Import data',    icon: 'ti-upload',      section: 'Import' },
 ]
 
 const PAGE_TITLES = {
   holdings: 'Holdings', harvest: 'Tax harvest',
-  gains: 'Capital gains', elss: 'ELSS tracker', import: 'Import data',
+  gains: 'Capital gains', elss: 'ELSS tracker', fire: 'FIRE', import: 'Import data',
 }
 
 // Holdings sub-tabs
@@ -123,7 +125,7 @@ export default function App() {
   const reset = () => {
     if (!confirmingReset) { setConfirmingReset(true); return }
     setConfirmingReset(false)
-    clearState(); setState({ holdings: [], trades: [], ltcgRealized: 0 }); setResult(null)
+    clearState(); setState(loadState()); setResult(null)
   }
 
   const postAnalysis = endpoint =>
@@ -257,6 +259,18 @@ export default function App() {
           {page === 'elss' && (
             !hasData ? <EmptyState onImport={() => setPage('import')} /> :
             <ElssTracker postAnalysis={postAnalysis} />
+          )}
+
+          {page === 'fire' && (
+            !hasData ? <EmptyState onImport={() => setPage('import')} /> :
+            <FireTracker currentValue={s?.current_value}
+              fireInputs={{
+                annualExpenses: state.annualExpenses, swr: state.swr,
+                expectedReturn: state.expectedReturn,
+                annualContribution: state.annualContribution,
+                yearsToRetirement: state.yearsToRetirement,
+              }}
+              onFireInputs={v => setState(st => ({ ...st, ...v }))} />
           )}
 
           {page === 'import' && (
