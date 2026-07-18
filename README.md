@@ -5,6 +5,11 @@ depository emails you every month) and turns it into a real portfolio view:
 live current value, returns (XIRR) per holding and overall, and Indian
 tax-harvesting suggestions — all without sending your data anywhere.
 
+![Folio holdings view](docs/screenshots/holdings.png)
+
+> Screenshots throughout this README use a fabricated demo portfolio, not
+> real account data.
+
 ## What it does
 
 - **See what you actually own** — every stock and mutual fund holding from
@@ -15,6 +20,23 @@ tax-harvesting suggestions — all without sending your data anywhere.
   ₹1.25L long-term capital gains exemption, and which losses can offset
   gains, before the financial year ends.
 - **Filter and drill in** — by stock, by fund, by account.
+
+<table>
+<tr>
+<td><img src="docs/screenshots/tax-harvest.png" alt="Tax harvesting suggestions"></td>
+<td><img src="docs/screenshots/allocation.png" alt="Portfolio allocation breakdown"></td>
+</tr>
+<tr>
+<td align="center"><sub>Tax-harvesting suggestions</sub></td>
+<td align="center"><sub>Allocation breakdown</sub></td>
+</tr>
+<tr>
+<td colspan="2"><img src="docs/screenshots/elss-tracker.png" alt="ELSS lock-in tracker"></td>
+</tr>
+<tr>
+<td colspan="2" align="center"><sub>ELSS lock-in tracker</sub></td>
+</tr>
+</table>
 
 ## Getting Folio
 
