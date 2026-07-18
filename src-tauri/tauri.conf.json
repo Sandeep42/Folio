@@ -36,6 +36,9 @@
     "externalBin": [
       "binaries/cas-analyzer-backend"
     ],
+    "macOS": {
+      "signingIdentity": "-"
+    },
     "android": {
       "debugApplicationIdSuffix": ".debug"
     }
