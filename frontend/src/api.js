@@ -51,11 +51,19 @@ export const api = {
 // ---- browser-side persistence: the ONLY place portfolio data lives ----
 const KEY = 'cas-portfolio-v1'
 
+const DEFAULT_STATE = {
+  holdings: [], trades: [], ltcgRealized: 0,
+  annualExpenses: 0, swr: 0.04, expectedReturn: 0.11,
+  annualContribution: 0, yearsToRetirement: 20,
+}
+
 export const loadState = () => {
   try {
-    return JSON.parse(localStorage.getItem(KEY)) || { holdings: [], trades: [], ltcgRealized: 0 }
+    // Merge over defaults so fields added after a user's first save (e.g.
+    // FIRE inputs) don't come back undefined for existing saved states.
+    return { ...DEFAULT_STATE, ...JSON.parse(localStorage.getItem(KEY)) }
   } catch {
-    return { holdings: [], trades: [], ltcgRealized: 0 }
+    return { ...DEFAULT_STATE }
   }
 }
 
