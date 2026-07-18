@@ -92,10 +92,19 @@ export default function App() {
   const addTrades   = trades => setState(s => ({ ...s, trades: [...s.trades, ...trades] }))
   const setSymbol   = (isin, symbol) => setState(s => ({ ...s, holdings: s.holdings.map(h => h.isin === isin ? { ...h, symbol } : h) }))
   const setCostBasis = (isin, cbt)   => setState(s => ({ ...s, holdings: s.holdings.map(h => h.isin === isin ? { ...h, cost_basis_type: cbt } : h) }))
+  // Tauri's embedded webview doesn't reliably support window.confirm(), so
+  // Clear data uses an explicit two-click arm/confirm instead.
+  const [confirmingReset, setConfirmingReset] = useState(false)
+  useEffect(() => {
+    if (!confirmingReset) return
+    const t = setTimeout(() => setConfirmingReset(false), 4000)
+    return () => clearTimeout(t)
+  }, [confirmingReset])
+
   const reset = () => {
-    if (window.confirm('Delete all portfolio data from this browser?')) {
-      clearState(); setState({ holdings: [], trades: [], ltcgRealized: 0 }); setResult(null)
-    }
+    if (!confirmingReset) { setConfirmingReset(true); return }
+    setConfirmingReset(false)
+    clearState(); setState({ holdings: [], trades: [], ltcgRealized: 0 }); setResult(null)
   }
 
   const postAnalysis = endpoint =>
@@ -152,7 +161,7 @@ export default function App() {
                   <i className="ti ti-refresh" /> {busy ? 'Refreshing…' : 'Refresh prices'}
                 </button>
                 <button className="btn danger" onClick={reset}>
-                  <i className="ti ti-trash" /> Clear data
+                  <i className="ti ti-trash" /> {confirmingReset ? 'Click again to confirm' : 'Clear data'}
                 </button>
               </>
             )}
