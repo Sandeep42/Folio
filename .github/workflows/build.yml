@@ -17,9 +17,6 @@ jobs:
           - os: macos-14
             rust-target: aarch64-apple-darwin
             bundles: dmg,app
-          - os: macos-13
-            rust-target: x86_64-apple-darwin
-            bundles: dmg,app
           - os: ubuntu-22.04
             rust-target: x86_64-unknown-linux-gnu
             bundles: deb,appimage
