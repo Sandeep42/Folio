@@ -1,3 +1,5 @@
+![Folio](docs/screenshots/cover.png)
+
 # Folio — CAS Portfolio Analyzer
 
 Folio reads your NSDL/CDSL Consolidated Account Statement (the PDF your
