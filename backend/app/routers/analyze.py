@@ -4,6 +4,7 @@ and returns everything. Nothing is persisted server-side.
 """
 from __future__ import annotations
 
+import re
 from datetime import date
 
 from fastapi import APIRouter
@@ -17,11 +18,17 @@ from ..services.xirr import xirr
 
 router = APIRouter(prefix="/api", tags=["analyze"])
 
+_ZERO_SUFFIX_RE = re.compile(r"/0+$")
+
 
 def _key(isin: str, folio: str | None) -> str:
-    # Normalise folio: strip trailing /0, /00 etc. added by some RTAs
+    # Normalise folio: strip only a trailing all-zero suffix (e.g. "/00")
+    # that some RTAs pad onto an otherwise identical folio number. A real
+    # distinguishing suffix (e.g. "/45" for a genuinely different folio of
+    # the same fund) must NOT be stripped, or two different folios collide
+    # onto the same key and one silently overwrites the other.
     if folio:
-        folio = folio.split("/")[0].strip()
+        folio = _ZERO_SUFFIX_RE.sub("", folio.strip())
     return f"{isin}:{folio}" if folio else isin
 
 
@@ -43,7 +50,7 @@ def _apply_trades(holdings: dict[str, Holding], req: AnalyzeRequest) -> list[Tra
             h.lots.append(Lot(buy_date=t.txn_date, quantity=t.quantity,
                               price=t.price, source="tradebook"))
             txns.append(Transaction(txn_date=t.txn_date, amount=-t.quantity * t.price,
-                                    isin=t.isin, description="BUY"))
+                                    isin=t.isin, folio=t.folio, description="BUY"))
         else:  # SELL
             remaining = t.quantity
             for lot in sorted(h.lots, key=lambda l: l.buy_date):
@@ -54,7 +61,7 @@ def _apply_trades(holdings: dict[str, Holding], req: AnalyzeRequest) -> list[Tra
                     break
             h.lots = [l for l in h.lots if l.quantity > 1e-9]
             txns.append(Transaction(txn_date=t.txn_date, amount=t.quantity * t.price,
-                                    isin=t.isin, description="SELL"))
+                                    isin=t.isin, folio=t.folio, description="SELL"))
     # avg cost from lots wherever real lots exist
     for h in holdings.values():
         if h.lots and any(l.source != "cas" for l in h.lots):
@@ -117,14 +124,12 @@ def _view(h: Holding, txns: list[Transaction]) -> HoldingView:
             h.avg_cost * h.quantity if h.avg_cost else None)
         pnl = (current - invested) if (current is not None and invested is not None) else None
 
-        # Scope cash flows to this specific folio's lots using buy-dates,
-        # so holdings with multiple folios don't bleed into each other.
-        lot_dates = {str(l.buy_date) for l in h.lots if l.source != "cas"}
-        if lot_dates:
-            flows = [(t.txn_date, t.amount) for t in txns
-                     if t.isin == h.isin and (str(t.txn_date) in lot_dates or t.description == "SELL")]
-        else:
-            flows = [(t.txn_date, t.amount) for t in txns if t.isin == h.isin]
+        # Scope cash flows to this exact holding (isin + normalised folio),
+        # not just isin+buy-date — two folios of the same fund can easily
+        # share a buy-date, and matching on date alone let one folio's
+        # transactions bleed into another folio's XIRR.
+        h_key = _key(h.isin, h.folio)
+        flows = [(t.txn_date, t.amount) for t in txns if _key(t.isin, t.folio) == h_key]
         if not flows and h.lots and any(l.source != "cas" for l in h.lots):
             flows = [(l.buy_date, -l.quantity * l.price) for l in h.lots]
         rate = xirr(flows + [(date.today(), current)]) if (flows and current) else None

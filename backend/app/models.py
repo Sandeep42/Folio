@@ -36,6 +36,7 @@ class Transaction(BaseModel):
     txn_date: date
     amount: float
     isin: str
+    folio: Optional[str] = None
     description: str = ""
 
 
