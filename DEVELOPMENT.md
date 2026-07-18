@@ -59,9 +59,15 @@ npm run tauri:build            # rebuilds the sidecar, then `tauri build`
 
 `build_sidecar.py` is cross-platform (macOS/Linux/Windows) so the same
 command works locally and in CI. `.github/workflows/build.yml` runs it in a
-matrix across macOS (arm64 + x64), Linux, and Windows on every push to `main`
-and on tags, producing `.dmg`/`.app`, `.deb`/`.AppImage`, and `.msi`/`.exe`
-bundles as workflow artifacts.
+matrix across macOS (`macos-14` arm64, `macos-15-intel` x64), Linux, and
+Windows on every push to `main` and on tags, producing `.dmg`/`.app`,
+`.deb`/`.AppImage`, and `.msi`/`.exe` bundles as workflow artifacts.
+
+**Cutting a release:** push a tag matching `v*` (e.g. `git tag v0.2.0 && git
+push origin v0.2.0`). Once all four matrix builds finish, a `release` job
+downloads every bundle and publishes them as assets on a GitHub Release for
+that tag via `softprops/action-gh-release`, so the README's Releases link
+has something to point to.
 
 ## The one thing you must understand about NSDL/CDSL CAS
 

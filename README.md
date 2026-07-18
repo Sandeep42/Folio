@@ -22,7 +22,7 @@ Download the build for your OS from the
 [Releases page](../../releases) (or the latest
 [Actions run](../../actions) artifacts):
 
-- **macOS** — `.dmg` (Apple Silicon only, for now)
+- **macOS** — `.dmg` (Apple Silicon or Intel — pick the matching one)
 - **Windows** — `.msi` or the `.exe` installer
 - **Linux** — `.deb` or `.AppImage`
 
