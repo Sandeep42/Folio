@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "cas-analyzer",
+  "productName": "Folio",
   "version": "0.1.0",
-  "identifier": "com.casanalyzer.desktop",
+  "identifier": "com.folio.desktop",
   "build": {
     "frontendDist": "../frontend/dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "Ledger — CAS Portfolio Analyzer",
+        "title": "Folio — CAS Portfolio Analyzer",
         "width": 1200,
         "height": 800,
         "resizable": true,
