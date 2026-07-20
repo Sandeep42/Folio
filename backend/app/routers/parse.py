@@ -152,6 +152,7 @@ async def parse_zerodha(files: list[UploadFile] = File(...)):
             quantity=t["quantity"],
             price=t["price"],
             folio=None,
+            symbol=t.get("symbol") or None,
         )
         for t in result.trades
     ]

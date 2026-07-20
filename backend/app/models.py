@@ -148,6 +148,7 @@ class TradeRow(BaseModel):
     quantity: float
     price: float
     folio: Optional[str] = None
+    symbol: Optional[str] = None       # stock ticker for yfinance lookup
 
 
 class AnalyzeRequest(BaseModel):

@@ -40,10 +40,14 @@ def _apply_trades(holdings: dict[str, Holding], req: AnalyzeRequest) -> list[Tra
         if h is None:
             # trades for fully-sold positions still matter for XIRR history
             h = Holding(isin=t.isin, name=t.isin, quantity=0.0, folio=t.folio,
+                        symbol=t.symbol,
                         asset_type=AssetType.MUTUAL_FUND if t.isin.startswith("INF")
                         else AssetType.STOCK)
             holdings[_key(t.isin, t.folio)] = h
         if t.side == "BUY":
+            # propagate symbol from trade to holding for stock price lookup
+            if t.symbol and not h.symbol:
+                h.symbol = t.symbol
             # real trade data replaces the synthetic CAS lot the first time
             if h.lots and all(l.source == "cas" for l in h.lots):
                 h.lots = []
