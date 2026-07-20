@@ -154,7 +154,18 @@ def open_pdf(data: bytes, password: str | None) -> fitz.Document:
     return doc
 
 
-# ── main parser ────────────────────────────────────────────────────────────
+# Product code prefix pattern (CAMS/KFintech scheme codes like B02G-, 128SCDGG-)
+PROD_CODE_RE = re.compile(r"^[A-Z0-9]{3,8}-")
+
+def _clean_name(name: str) -> str:
+    """Remove RTA product code prefixes and clean up scheme names."""
+    name = PROD_CODE_RE.sub("", name).strip(" -")
+    # Fix common PDF extraction artefacts
+    name = re.sub(r"\s+", " ", name)          # collapse whitespace
+    name = re.sub(r"\(Non.?Demat\)", "", name)  # remove (Non-Demat) suffix
+    name = re.sub(r"\(Demat\)", "", name)
+    name = name.strip(" -")
+    return name[:120]
 
 def parse_cams_kfin_cas(data: bytes, password: str | None = None) -> CamsKfinParseResult:
     doc = open_pdf(data, password)
@@ -236,6 +247,9 @@ def parse_cams_kfin_cas(data: bytes, password: str | None = None) -> CamsKfinPar
         in_folio = reading_txns = False
 
     i = 0
+    # buffer last non-boiler line to catch wrapped scheme names
+    prev_data_line: str | None = None
+
     while i < len(lines):
         ln = lines[i]
 
@@ -246,19 +260,44 @@ def parse_cams_kfin_cas(data: bytes, password: str | None = None) -> CamsKfinPar
                 flush_folio()
             reset()
             cur_isin = isin_m.group(0)
-            # Scheme name: everything before " - ISIN:" or the whole line minus ISIN
+            # Extract scheme name: everything before ISIN
             if " - ISIN:" in ln:
-                cur_scheme = ln.split(" - ISIN:")[0].strip(" -")
+                raw_name = ln.split(" - ISIN:")[0].strip(" -")
             elif " - " in ln:
-                cur_scheme = ln.split(" - ")[0].strip()
+                raw_name = ln.split(" - ")[0].strip()
             else:
-                cur_scheme = ln[:120]
-            # Trim advisor suffix
-            cur_scheme = cur_scheme.split("(Advisor:")[0].strip(" -")[:120]
+                raw_name = ln[:120]
+            raw_name = raw_name.split("(Advisor:")[0].strip(" -")[:120]
+
+            # If the name looks truncated (starts with lowercase/Fund) etc.),
+            # try joining with the previous data line
+            if prev_data_line and (
+                raw_name.startswith("Fund") or
+                raw_name.startswith("fund") or
+                raw_name.startswith("-") or
+                len(raw_name) < 15
+            ):
+                # Remove product code prefix from prev line if present
+                prev = re.sub(r"^[A-Z0-9]{3,8}-", "", prev_data_line).strip(" -")
+                raw_name = (prev + " " + raw_name).strip()
+                # Fix doubled words from the join
+                raw_name = re.sub(r"(\w+)\s+\1", r"\1", raw_name)
+
+            cur_scheme = _clean_name(raw_name)
             in_folio = True
             reading_txns = False
+            prev_data_line = None
             i += 1
             continue
+
+        # Track previous non-boiler data line for scheme name continuation
+        # (do this before any continue so it captures out-of-folio lines too)
+        if not isin_m:
+            if ln and not _is_num(ln) and "***" not in ln and not DATE_RE.match(ln) \
+               and not ln.startswith("Folio No:") and not ln.startswith("Registrar :") \
+               and not any(ln.startswith(lb) for lb in CLOSING_LABELS) \
+               and not ln.startswith("Nominee") and not ln.startswith("Opening Unit Balance:"):
+                prev_data_line = ln
 
         if not in_folio:
             i += 1
