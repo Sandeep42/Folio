@@ -62,11 +62,14 @@ def _apply_trades(holdings: dict[str, Holding], req: AnalyzeRequest) -> list[Tra
             h.lots = [l for l in h.lots if l.quantity > 1e-9]
             txns.append(Transaction(txn_date=t.txn_date, amount=t.quantity * t.price,
                                     isin=t.isin, folio=t.folio, description="SELL"))
-    # avg cost from lots wherever real lots exist
+    # avg cost from lots wherever real lots exist;
+    # also update quantity for phantom/stock holdings that started at 0
     for h in holdings.values():
         if h.lots and any(l.source != "cas" for l in h.lots):
             q = sum(l.quantity for l in h.lots)
             h.avg_cost = round(sum(l.quantity * l.price for l in h.lots) / q, 4) if q else None
+            if h.quantity == 0:
+                h.quantity = q  # phantom holding — derive qty from lots
     return txns
 
 
