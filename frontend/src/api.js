@@ -9,22 +9,11 @@ const json = (r) => {
 }
 
 export const api = {
-  parseCas: (file, password) => {
+  parseCamsKfinCas: (file, password) => {
     const fd = new FormData()
     fd.append('file', file)
     fd.append('password', password || '')
-    return fetch(`${API_BASE}/api/parse-cas`, { method: 'POST', body: fd }).then(json)
-  },
-  parseXls: (file, holdings) => {
-    const fd = new FormData()
-    fd.append('file', file)
-    fd.append('holdings_json', JSON.stringify(holdings || []))
-    return fetch(`${API_BASE}/api/parse-xls`, { method: 'POST', body: fd }).then(json)
-  },
-  parseKfin: (file) => {
-    const fd = new FormData()
-    fd.append('file', file)
-    return fetch(`${API_BASE}/api/parse-kfin`, { method: 'POST', body: fd }).then(json)
+    return fetch(`${API_BASE}/api/parse-cams-kfin-cas`, { method: 'POST', body: fd }).then(json)
   },
   parseZerodha: (files) => {
     const fd = new FormData()
