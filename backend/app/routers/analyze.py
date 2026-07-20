@@ -39,7 +39,7 @@ def _apply_trades(holdings: dict[str, Holding], req: AnalyzeRequest) -> list[Tra
         h = holdings.get(_key(t.isin, t.folio)) or holdings.get(t.isin)
         if h is None:
             # trades for fully-sold positions still matter for XIRR history
-            h = Holding(isin=t.isin, name=t.isin, quantity=0.0, folio=t.folio,
+            h = Holding(isin=t.isin, name=t.symbol or t.isin, quantity=0.0, folio=t.folio,
                         symbol=t.symbol,
                         asset_type=AssetType.MUTUAL_FUND if t.isin.startswith("INF")
                         else AssetType.STOCK)

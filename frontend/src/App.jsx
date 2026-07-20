@@ -83,7 +83,7 @@ export default function App() {
   useEffect(() => { saveState(state) }, [state])
 
   const compute = useCallback(async (fetchPrices) => {
-    if (!state.holdings.length) { setResult(null); return }
+    if (!state.holdings.length && !state.trades.length) { setResult(null); return }
     setBusy(true); setError('')
     try {
       const res = await api.analyze({
