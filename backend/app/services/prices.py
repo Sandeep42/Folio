@@ -59,23 +59,34 @@ async def fetch_amfi_navs(force: bool = False) -> dict[str, dict]:
     return by_isin
 
 
+def _yf_sym(sym: str) -> str:
+    """Normalise Indian ticker for yfinance: add .NS if missing and not BSE."""
+    if "." not in sym:
+        return sym + ".NS"
+    return sym
+
+
 def fetch_stock_prices(symbols: list[str]) -> dict[str, dict]:
     """Return {symbol: {price, price_date}} via yfinance. Sync (yfinance is)."""
     if not symbols:
         return {}
     import yfinance as yf  # local import: heavy
 
+    # Normalise symbols for NSE (yfinance requires .NS suffix)
+    sym_map = {s: _yf_sym(s) for s in symbols}
+    yf_symbols = list(set(sym_map.values()))
+
     out: dict[str, dict] = {}
-    tickers = yf.Tickers(" ".join(symbols))
-    for sym in symbols:
+    tickers = yf.Tickers(" ".join(yf_symbols))
+    for orig_sym, yf_sym in sym_map.items():
         try:
-            hist = tickers.tickers[sym].history(period="5d")
+            hist = tickers.tickers[yf_sym].history(period="5d")
             if hist.empty:
                 continue
-            out[sym] = {
+            out[orig_sym] = {
                 "price": float(hist["Close"].iloc[-1]),
                 "price_date": hist.index[-1].date(),
             }
         except Exception as exc:  # network / delisted / bad symbol
-            log.warning("price fetch failed for %s: %s", sym, exc)
+            log.warning("price fetch failed for %s: %s", orig_sym, exc)
     return out
