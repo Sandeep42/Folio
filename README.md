@@ -73,7 +73,7 @@ Upload your data on Folio's **Import data** page:
 
 1. **CAS — CAMS + KFinTech Consolidated Statement (PDF)** — get it from
    [CAMS](https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement)
-   with the **Detailed** option. Password is your PAN in capitals. This
+   with the **Detailed** option. Create a Password of your choice. This
    single file covers all your mutual fund holdings and transaction history.
 
    ![CAMS + KFinTech Consolidated Account Statement form](docs/screenshots/upload-sources/cams-consolidated.png)
