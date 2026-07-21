@@ -7,11 +7,11 @@ import {
   View, Text, TouchableOpacity, TextInput, Alert,
   StyleSheet, ScrollView, ActivityIndicator,
 } from 'react-native';
-import DocumentPicker from 'react-native-document-picker';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { parseCamsKfinCas } from '../parsers/casPdf';
 import { mergeZerodhaFiles } from '../parsers/zerodha';
 import { parseTradebookCsv } from '../parsers/tradebook';
+import { pickPdf, pickCsvs, pickCsv, readFileAsBase64, readFileAsText } from '../utils/filePicker';
 
 export default function UploadScreen() {
   const { state, onHoldings, onTrades } = usePortfolio();
@@ -27,10 +27,9 @@ export default function UploadScreen() {
   };
 
   const handleCas = async () => {
-    const res = await DocumentPicker.pick({ type: [DocumentPicker.types.pdf] });
-    if (!res[0]) return;
-    const response = await fetch(res[0].uri);
-    const buffer = await response.arrayBuffer();
+    const res = await pickPdf();
+    if (res.canceled || !res.uri) return;
+    const buffer = await readFileAsBase64(res.uri);
     const parsed = await parseCamsKfinCas(buffer, password || undefined);
     if (parsed.holdings.length) onHoldings(parsed.holdings);
     if (parsed.trades.length) onTrades(parsed.trades);
@@ -38,22 +37,18 @@ export default function UploadScreen() {
   };
 
   const handleZerodha = async () => {
-    const res = await DocumentPicker.pick({
-      type: [DocumentPicker.types.csv, DocumentPicker.types.plainText],
-      allowMultiSelection: true,
-    });
-    if (!res.length) return;
-    const texts = await Promise.all(res.map(async (f) => { const r = await fetch(f.uri); return r.text(); }));
+    const res = await pickCsvs();
+    if (res.canceled || !res.uris?.length) return;
+    const texts = await Promise.all(res.uris.map(u => readFileAsText(u)));
     const parsed = mergeZerodhaFiles(texts);
     if (parsed.trades.length) onTrades(parsed.trades);
-    setMsg(`Imported ${parsed.trades.length} trades from ${res.length} file(s)`);
+    setMsg(`Imported ${parsed.trades.length} trades from ${res.uris.length} file(s)`);
   };
 
   const handleTradebook = async () => {
-    const res = await DocumentPicker.pick({ type: [DocumentPicker.types.csv, DocumentPicker.types.plainText] });
-    if (!res[0]) return;
-    const response = await fetch(res[0].uri);
-    const text = await response.text();
+    const res = await pickCsv();
+    if (res.canceled || !res.uri) return;
+    const text = await readFileAsText(res.uri);
     const parsed = parseTradebookCsv(text);
     if (parsed.trades.length) onTrades(parsed.trades);
     setMsg(`Imported ${parsed.trades.length} trades`);
