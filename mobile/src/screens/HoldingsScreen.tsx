@@ -16,7 +16,7 @@ type Nav = NativeStackNavigationProp<PortfolioStackParamList, 'HoldingsList'>;
 
 export default function HoldingsScreen() {
   const nav = useNavigation<Nav>();
-  const { result, loading } = usePortfolio();
+  const { result, loading, refreshPrices } = usePortfolio();
   const views = result?.holdings || [];
 
   const totalInvested = useMemo(() => views.reduce((s, v) => s + (v.invested || 0), 0), [views]);
@@ -56,6 +56,9 @@ export default function HoldingsScreen() {
             {inr(totalCurrent - totalInvested)}
           </Text>
         </View>
+        <TouchableOpacity style={styles.refreshBtn} onPress={refreshPrices}>
+          <Text style={styles.refreshText}>⟳</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Warning banner */}
@@ -103,7 +106,7 @@ const styles = StyleSheet.create({
   emptyDesc: { fontSize: 14, color: '#666', textAlign: 'center' },
   summary: {
     flexDirection: 'row', backgroundColor: '#fff', padding: 16, gap: 16,
-    borderBottomWidth: 1, borderBottomColor: '#e0e0e0',
+    borderBottomWidth: 1, borderBottomColor: '#e0e0e0', alignItems: 'center',
   },
   summaryItem: { flex: 1, alignItems: 'center' },
   summaryLabel: { fontSize: 11, color: '#666', textTransform: 'uppercase', letterSpacing: 0.5 },
@@ -122,4 +125,6 @@ const styles = StyleSheet.create({
   rowValue: { fontSize: 14, fontWeight: '600' },
   rowPnl: { fontSize: 12, marginTop: 2 },
   rowXirr: { fontSize: 11, color: '#666', marginTop: 2 },
+  refreshBtn: { padding: 8, marginLeft: 4 },
+  refreshText: { fontSize: 20, color: '#1976d2' },
 });

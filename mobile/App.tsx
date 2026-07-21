@@ -6,7 +6,8 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View, StyleSheet, Text, SafeAreaView } from 'react-native';
+import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { loadState, saveState, PortfolioState } from './src/storage';
 import { HoldingView } from './src/models/HoldingView';
@@ -91,7 +92,7 @@ export default function App() {
     finally { setLoading(false); }
   }, [state]);
 
-  useEffect(() => { if (state) compute(false); }, [state, compute]);
+  useEffect(() => { if (state) compute(true); }, [state, compute]);
 
   const refreshPrices = useCallback(() => compute(true), [compute]);
 
@@ -128,7 +129,8 @@ export default function App() {
 
   return (
     <PortfolioCtx.Provider value={ctx}>
-      <SafeAreaView style={{ flex: 1 }}>
+      <SafeAreaProvider>
+        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
         <NavigationContainer>
         <Tab.Navigator
           screenOptions={{
@@ -148,8 +150,9 @@ export default function App() {
             {() => <UploadScreen />}
           </Tab.Screen>
         </Tab.Navigator>
-      </NavigationContainer>
-      </SafeAreaView>
+        </NavigationContainer>
+        </SafeAreaView>
+      </SafeAreaProvider>
     </PortfolioCtx.Provider>
   );
 }

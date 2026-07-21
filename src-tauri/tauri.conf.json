@@ -36,9 +36,6 @@
     "externalBin": [
       "binaries/cas-analyzer-backend"
     ],
-    "resources": [
-      "binaries/*"
-    ],
     "macOS": {
       "signingIdentity": "-",
       "entitlements": "entitlements.plist"

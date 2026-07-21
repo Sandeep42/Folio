@@ -124,6 +124,10 @@ public class FilePickerModule extends ReactContextBaseJavaModule {
         doc = PDDocument.load(is);
       }
       PDFTextStripper stripper = new PDFTextStripper();
+      // Output each text block on its own line (matching PyMuPDF's cell-by-cell layout)
+      stripper.setSortByPosition(true);
+      stripper.setLineSeparator("\n");
+      stripper.setWordSeparator(" ");
       String text = stripper.getText(doc);
       doc.close();
       is.close();

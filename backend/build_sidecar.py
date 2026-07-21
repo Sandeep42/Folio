@@ -48,7 +48,6 @@ def main():
     src = BACKEND_DIR / "dist" / src_name
     dest = dest_dir / dest_name
     shutil.copy2(src, dest)
-    dest.chmod(0o755)  # ensure executable
     print(f"Sidecar binary written to {dest}")
 
 
