@@ -123,6 +123,9 @@ function parseText(fullText: string): CamsKfinParseResult {
     as_of: null, warnings: [], skipped_txns: 0,
   };
 
+  // Include raw text preview for diagnostics when parsing fails
+  const rawPreview = fullText.slice(0, 400).replace(/\n/g, '↵ ');
+
   // Statement period
   const pm = fullText.slice(0, 2000).match(
     /(\d{2}-[A-Z][a-z]{2}-\d{4})\s+To\s+(\d{2}-[A-Z][a-z]{2}-\d{4})/i,
@@ -316,7 +319,7 @@ function parseText(fullText: string): CamsKfinParseResult {
   }
   result.holdings = Object.values(merged).filter(h => h.quantity > 0);
   if (asOfDate) result.as_of = asOfDate;
-  if (!result.holdings.length) result.warnings.push('No holdings recognised.');
+  if (!result.holdings.length) result.warnings.push('No holdings recognised. Raw text: ' + rawPreview);
   if (result.skipped_txns) result.warnings.push(`${result.skipped_txns} non-financial rows skipped.`);
   return result;
 }
@@ -340,7 +343,8 @@ export async function parseCamsKfinCas(
       skipped_txns: 0,
     };
   }
-  return parseText(fullText);
+  const result = parseText(fullText);
+  return result;
 }
 
 /**
