@@ -14,35 +14,19 @@ export default function UploadPanel({ holdings, onHoldings, onTrades, onDone }) 
     finally { setBusy(false) }
   }
 
-  const handleCas = (e) => {
+  const handleCamsKfinCas = (e) => {
     const file = e.target.files?.[0]; if (!file) return
     wrap(async () => {
-      const res = await api.parseCas(file, password)
-      onHoldings(res.holdings)
-      setMsg({ text: `Parsed ${res.parsed} holdings${res.statement_period ? ` · ${res.statement_period}` : ''}.`, warn: false })
-      setWarnings(res.warnings || [])
-    })
-    e.target.value = ''
-  }
-
-  const handleCams = (e) => {
-    const file = e.target.files?.[0]; if (!file) return
-    wrap(async () => {
-      const res = await api.parseXls(file, holdings)
-      const resolved = res.trades.filter(t => t.isin).length
-      onTrades(res.trades.filter(t => t.isin))
-      setMsg({ text: `CAMS: imported ${resolved} trades.${res.skipped ? ` ${res.skipped} rows skipped.` : ''}`, warn: false })
-      setWarnings(res.warnings || [])
-    })
-    e.target.value = ''
-  }
-
-  const handleKfin = (e) => {
-    const file = e.target.files?.[0]; if (!file) return
-    wrap(async () => {
-      const res = await api.parseKfin(file)
-      onTrades(res.trades)
-      setMsg({ text: `KFIN: imported ${res.trades.length} trades.${res.skipped ? ` ${res.skipped} rows skipped.` : ''}`, warn: false })
+      const res = await api.parseCamsKfinCas(file, password)
+      // Returns both holdings AND trades in one call
+      if (res.holdings?.length) onHoldings(res.holdings)
+      if (res.trades?.length) onTrades(res.trades)
+      const msgParts = [
+        `Imported ${res.parsed_holdings} holdings`,
+        res.parsed_trades && `${res.parsed_trades} transactions`,
+        res.statement_period && `· ${res.statement_period}`,
+      ].filter(Boolean)
+      setMsg({ text: msgParts.join(', '), warn: false })
       setWarnings(res.warnings || [])
     })
     e.target.value = ''
@@ -86,36 +70,22 @@ export default function UploadPanel({ holdings, onHoldings, onTrades, onDone }) 
       ))}
 
       <div className="upload-grid">
-        <div className="upload-box">
-          <h3><i className="ti ti-file-type-pdf" aria-hidden="true" style={{ marginRight: 6 }} />1 · CAS (PDF)</h3>
-          <p>NSDL or CDSL consolidated statement. Parsed in memory — nothing stored on the server.</p>
-          <input type="password" placeholder="PDF password (your PAN)"
+        <div className="upload-box" style={{ gridColumn: '1 / -1' }}>
+          <h3><i className="ti ti-file-type-pdf" aria-hidden="true" style={{ marginRight: 6 }} />CAS — CAMS + KFinTech Consolidated Statement</h3>
+          <p>Get it from <a href="https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement" target="_blank" rel="noopener">CAMS</a> with <strong>Detailed</strong> option selected — covers all your mutual fund holdings and transaction history in one file.</p>
+          <input type="password" placeholder="PDF password"
             value={password} onChange={(e) => setPassword(e.target.value)} />
-          <input type="file" accept="application/pdf" onChange={handleCas} disabled={busy} />
+          <input type="file" accept="application/pdf" onChange={handleCamsKfinCas} disabled={busy} />
         </div>
 
         <div className="upload-box">
-          <h3><i className="ti ti-file-spreadsheet" aria-hidden="true" style={{ marginRight: 6 }} />2 · CAMS history (XLS)</h3>
-          <p>mycams.com → Mailback Services → Transaction Statement → Detailed, Since Inception. Covers ABSL, DSP, HDFC, ICICI, Kotak, SBI, Parag Parikh, Navi etc.</p>
-          <input type="file" accept=".xls,.xlsx" onChange={handleCams}
-            disabled={busy || !holdings?.length} />
-          {!holdings?.length && <div className="upload-note">Upload CAS first to enable ISIN matching.</div>}
-        </div>
-
-        <div className="upload-box">
-          <h3><i className="ti ti-file-spreadsheet" aria-hidden="true" style={{ marginRight: 6 }} />3 · KFIN history (XLS)</h3>
-          <p>kfintech.com → Investor Services → Transaction Statement → Since Inception. Covers Axis MF, UTI, Mirae Asset, Nippon, Quant.</p>
-          <input type="file" accept=".xls,.xlsx" onChange={handleKfin} disabled={busy} />
-        </div>
-
-        <div className="upload-box">
-          <h3><i className="ti ti-chart-candle" aria-hidden="true" style={{ marginRight: 6 }} />4 · Zerodha tradebook (CSV)</h3>
+          <h3><i className="ti ti-chart-candle" aria-hidden="true" style={{ marginRight: 6 }} />Zerodha tradebook (CSV)</h3>
           <p>Console → Reports → Tradebook. Select multiple FY files at once — duplicates removed automatically. F&O rows skipped.</p>
           <input type="file" accept=".csv,text/csv" multiple onChange={handleZerodha} disabled={busy} />
         </div>
 
         <div className="upload-box">
-          <h3><i className="ti ti-table" aria-hidden="true" style={{ marginRight: 6 }} />5 · Generic tradebook (CSV)</h3>
+          <h3><i className="ti ti-table" aria-hidden="true" style={{ marginRight: 6 }} />Generic tradebook (CSV)</h3>
           <p>Any broker: columns <code>isin, date, side, quantity, price</code>. Groww and Upstox exports map here with a column rename.</p>
           <input type="file" accept=".csv,text/csv" onChange={handleTradebook} disabled={busy} />
         </div>

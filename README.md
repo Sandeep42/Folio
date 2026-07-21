@@ -69,24 +69,22 @@ xattr -cr /Applications/Folio.app
 
 ## Using it
 
-1. **Upload your CAS PDF.** Get it from the
-   [CDSL](https://www.cdslindia.com/) or [NSDL](https://www.nsdl.co.in/)
-   website (or CAMS/KFintech, if you hold mutual funds directly). The
-   password is your PAN in capital letters.
-2. **(Recommended) Import a tradebook CSV.** A CAS only tells you *what* you
-   own, not *when you bought it* — so returns and tax-lot calculations need
-   your actual buy history. Export your trades from Zerodha/Groww/your
-   broker (or your mutual fund transaction statement) as a CSV with columns
-   `isin,date,side,quantity,price[,folio]`, and import it. Until you do
-   this, Folio falls back to an approximate cost basis and says so on
-   screen.
-3. **Browse your portfolio.** Check current value, XIRR, and allocation; use
-   the tax-harvesting tab before filing.
+Upload your data on Folio's **Import data** page:
 
-Folio's Import page actually has five upload options (CAS, CAMS history,
-KFIN history, Zerodha tradebook, generic tradebook) — see
-**[UPLOADING.md](UPLOADING.md)** for exactly where to get each file and what
-each one does.
+1. **CAS — CAMS + KFinTech Consolidated Statement (PDF)** — get it from
+   [CAMS](https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement)
+   with the **Detailed** option. Create a Password of your choice. This
+   single file covers all your mutual fund holdings and transaction history.
+
+   ![CAMS + KFinTech Consolidated Account Statement form](docs/screenshots/upload-sources/cams-consolidated.png)
+
+2. **(Optional) Zerodha tradebook (CSV)** — Console → Reports → Tradebook.
+   Needed for stock/ETF trades not in the CAS. Select multiple FY files at
+   once — duplicates removed automatically. Or use the Generic tradebook
+   option for any other broker (columns: `isin,date,side,quantity,price`).
+
+That's it — you can also add a generic tradebook CSV from any broker.
+See the Import page itself for full details on each option.
 
 ## Privacy
 

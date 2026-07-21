@@ -20,6 +20,19 @@ router = APIRouter(prefix="/api", tags=["analyze"])
 
 _ZERO_SUFFIX_RE = re.compile(r"/0+$")
 
+ETF_KEYWORDS = ("ETF", "BEES", "EXCHANGE TRADED",)
+
+
+def _is_stock(isin: str, symbol: str | None) -> bool:
+    """Determine if an ISIN/symbol represents a stock or ETF (vs mutual fund)."""
+    if isin.startswith("INE"):
+        return True
+    if isin.startswith("INF") and symbol:
+        up = symbol.upper()
+        if any(kw in up for kw in ETF_KEYWORDS):
+            return True
+    return False
+
 
 def _key(isin: str, folio: str | None) -> str:
     # Normalise folio: strip only a trailing all-zero suffix (e.g. "/00")
@@ -39,11 +52,15 @@ def _apply_trades(holdings: dict[str, Holding], req: AnalyzeRequest) -> list[Tra
         h = holdings.get(_key(t.isin, t.folio)) or holdings.get(t.isin)
         if h is None:
             # trades for fully-sold positions still matter for XIRR history
-            h = Holding(isin=t.isin, name=t.isin, quantity=0.0, folio=t.folio,
-                        asset_type=AssetType.MUTUAL_FUND if t.isin.startswith("INF")
-                        else AssetType.STOCK)
+            h = Holding(isin=t.isin, name=t.symbol or t.isin, quantity=0.0, folio=t.folio,
+                        symbol=t.symbol,
+                        asset_type=AssetType.STOCK if _is_stock(t.isin, t.symbol)
+                        else AssetType.MUTUAL_FUND)
             holdings[_key(t.isin, t.folio)] = h
         if t.side == "BUY":
+            # propagate symbol from trade to holding for stock price lookup
+            if t.symbol and not h.symbol:
+                h.symbol = t.symbol
             # real trade data replaces the synthetic CAS lot the first time
             if h.lots and all(l.source == "cas" for l in h.lots):
                 h.lots = []
@@ -62,11 +79,14 @@ def _apply_trades(holdings: dict[str, Holding], req: AnalyzeRequest) -> list[Tra
             h.lots = [l for l in h.lots if l.quantity > 1e-9]
             txns.append(Transaction(txn_date=t.txn_date, amount=t.quantity * t.price,
                                     isin=t.isin, folio=t.folio, description="SELL"))
-    # avg cost from lots wherever real lots exist
+    # avg cost from lots wherever real lots exist;
+    # also update quantity for phantom/stock holdings that started at 0
     for h in holdings.values():
         if h.lots and any(l.source != "cas" for l in h.lots):
             q = sum(l.quantity for l in h.lots)
             h.avg_cost = round(sum(l.quantity * l.price for l in h.lots) / q, 4) if q else None
+            if h.quantity == 0:
+                h.quantity = q  # phantom holding — derive qty from lots
     return txns
 
 
@@ -211,6 +231,26 @@ async def holding_detail(req: AnalyzeRequest, isin: str, folio: str | None = Non
     if not h:
         from fastapi import HTTPException
         raise HTTPException(404, f"Holding {isin} not found")
+
+    # Price the holding if it has no price yet (e.g. stock phantom holdings)
+    from ..services import prices as price_svc
+    if h.last_price is None:
+        if h.symbol:
+            try:
+                quotes = await run_in_threadpool(price_svc.fetch_stock_prices, [h.symbol])
+                q = quotes.get(h.symbol)
+                if q:
+                    h.last_price, h.price_as_of = q["price"], q["price_date"]
+            except Exception:
+                pass
+        elif h.asset_type == AssetType.MUTUAL_FUND:
+            try:
+                navs = await price_svc.fetch_amfi_navs()
+                rec = navs.get(h.isin)
+                if rec:
+                    h.last_price, h.price_as_of, h.amfi_code = rec["nav"], rec["nav_date"], rec["amfi_code"]
+            except Exception:
+                pass
 
     current = h.last_price * h.quantity if h.last_price else None
 

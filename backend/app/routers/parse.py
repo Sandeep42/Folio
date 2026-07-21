@@ -3,19 +3,22 @@
 Nothing is written to disk. The browser owns all state: it stores what these
 endpoints return (localStorage) and sends it back to /api/analyze whenever it
 wants valuations, XIRR, or tax numbers.
+
+Endpoints:
+  POST /api/parse-cams-kfin-cas  — CAMS/KFintech CAS PDF (holdings + trades)
+  POST /api/parse-zerodha        — Zerodha tradebook CSV (equity trades)
+  POST /api/parse-tradebook      — Generic broker CSV tradebook
 """
 from __future__ import annotations
 
 import csv
 import io
-import json
 from datetime import datetime
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 
 from ..models import AssetType, Holding, Lot, TradeRow
-from ..parsers.cams_xls import parse_xls
-from ..parsers.nsdl_cdsl import parse_cas
+from ..parsers.cams_kfin_cas import parse_cams_kfin_cas
 
 router = APIRouter(prefix="/api", tags=["parse"])
 
@@ -32,36 +35,70 @@ def _parse_date(s: str):
     raise HTTPException(422, f"Unrecognised date: {s!r}")
 
 
-@router.post("/parse-cas")
-async def parse_cas_endpoint(file: UploadFile = File(...), password: str = Form(default="")):
+@router.post("/parse-cams-kfin-cas")
+async def parse_cams_kfin_cas_endpoint(
+    file: UploadFile = File(...),
+    password: str = Form(default=""),
+):
+    """Parse a CAMS/KFintech CAS PDF.
+
+    This single PDF contains both holdings AND full transaction history
+    for all mutual fund folios, replacing the old 3-step upload flow
+    (CAS PDF → CAMS XLS → KFIN XLS).
+
+    Returns holdings (with avg_cost from Total Cost Value) and trades
+    (BUY/SELL with ISIN, folio, quantity, price).
+
+    The PDF may be password-protected — the password is normally the
+    investor's PAN in capitals.  All parsing happens in memory.
+    """
     data = await file.read()
     try:
-        result = parse_cas(data, password or None)
+        result = parse_cams_kfin_cas(data, password or None)
     except ValueError as exc:
         raise HTTPException(422, str(exc))
 
-    as_of = result.as_of or datetime.today().date()
+    as_of = result.as_of or str(datetime.today().date())
+
     holdings: list[Holding] = []
     for ph in result.holdings:
         h = Holding(
-            isin=ph.isin, name=ph.name, asset_type=AssetType(ph.asset_type),
-            quantity=ph.quantity, folio=ph.folio, avg_cost=ph.avg_cost,
-            last_price=ph.nav_or_price, price_as_of=as_of,
+            isin=ph.isin,
+            name=ph.name,
+            asset_type=AssetType("mutual_fund"),
+            quantity=ph.quantity,
+            folio=ph.folio,
+            avg_cost=ph.avg_cost,
+            last_price=ph.nav,
+            price_as_of=as_of,
         )
-        # CDSL folio rows carry cumulative invested -> one synthetic lot so
-        # P&L works immediately. Dated as-of statement date (real buy dates
-        # unknown), flagged source="cas" so tax-term math ignores it.
         if h.avg_cost:
-            h.lots = [Lot(buy_date=as_of, quantity=h.quantity,
+            as_of_date = datetime.strptime(str(as_of), "%Y-%m-%d").date() \
+                if isinstance(as_of, str) and "-" in str(as_of) else datetime.today().date()
+            h.lots = [Lot(buy_date=as_of_date, quantity=h.quantity,
                           price=h.avg_cost, source="cas")]
         holdings.append(h)
 
+    trades = [
+        TradeRow(
+            isin=t.isin,
+            txn_date=t.txn_date,
+            side=t.side,
+            quantity=t.quantity,
+            price=t.price,
+            folio=t.folio,
+        )
+        for t in result.trades
+    ]
+
     return {
-        "parsed": len(holdings),
         "statement_period": result.statement_period,
         "as_of": str(as_of),
         "warnings": result.warnings,
         "holdings": [h.model_dump(mode="json") for h in holdings],
+        "trades": [t.model_dump(mode="json") for t in trades],
+        "parsed_holdings": len(holdings),
+        "parsed_trades": len(trades),
     }
 
 
@@ -96,45 +133,6 @@ async def parse_tradebook(file: UploadFile = File(...)):
     return {"trades": [t.model_dump(mode="json") for t in trades]}
 
 
-@router.post("/parse-xls")
-async def parse_xls_endpoint(
-    file: UploadFile = File(...),
-    holdings_json: str = Form(default="[]"),
-):
-    """Parse a CAMS MF transaction history XLS.
-
-    The browser POSTs the file plus its current holdings (JSON string) so
-    ISINs can be resolved via folio/scheme-name matching against the CAS.
-    Nothing is stored server-side.
-    """
-    data = await file.read()
-    try:
-        cas_holdings = json.loads(holdings_json) if holdings_json else []
-    except json.JSONDecodeError:
-        cas_holdings = []
-
-    result = parse_xls(data, cas_holdings or None)
-
-    trades = [
-        TradeRow(
-            isin=t.isin or "",          # empty string for unresolved — browser shows warning
-            txn_date=t.txn_date,
-            side=t.side,
-            quantity=t.units,
-            price=t.price,
-            folio=t.folio or None,
-        )
-        for t in result.trades
-    ]
-
-    return {
-        "trades": [t.model_dump(mode="json") for t in trades],
-        "unresolved": result.unresolved,
-        "skipped": result.skipped,
-        "warnings": result.warnings,
-    }
-
-
 @router.post("/parse-zerodha")
 async def parse_zerodha(files: list[UploadFile] = File(...)):
     """Accept one or more Zerodha Console tradebook CSVs.
@@ -154,6 +152,7 @@ async def parse_zerodha(files: list[UploadFile] = File(...)):
             quantity=t["quantity"],
             price=t["price"],
             folio=None,
+            symbol=t.get("symbol") or None,
         )
         for t in result.trades
     ]
@@ -163,34 +162,5 @@ async def parse_zerodha(files: list[UploadFile] = File(...)):
         "skipped_fo": result.skipped_fo,
         "skipped_no_isin": result.skipped_no_isin,
         "duplicates_removed": result.duplicate_trade_ids,
-        "warnings": result.warnings,
-    }
-
-
-@router.post("/parse-kfin")
-async def parse_kfin(file: UploadFile = File(...)):
-    """Parse a KFIN (KFintech) MF transaction history XLS/XLSX.
-    ISIN is directly in the file — no CAS context needed.
-    """
-    from ..parsers.kfin import parse_kfin_xls
-
-    data = await file.read()
-    result = parse_kfin_xls(data)
-
-    trades = [
-        TradeRow(
-            isin=t["isin"],
-            txn_date=t["txn_date"],
-            side=t["side"],
-            quantity=t["quantity"],
-            price=t["price"],
-            folio=t["folio"],
-        )
-        for t in result.trades
-    ]
-
-    return {
-        "trades": [t.model_dump(mode="json") for t in trades],
-        "skipped": result.skipped,
         "warnings": result.warnings,
     }
