@@ -71,8 +71,8 @@ export default function UploadPanel({ holdings, onHoldings, onTrades, onDone }) 
 
       <div className="upload-grid">
         <div className="upload-box" style={{ gridColumn: '1 / -1' }}>
-          <h3><i className="ti ti-file-type-pdf" aria-hidden="true" style={{ marginRight: 6 }} />CAMS / KFintech CAS (PDF)</h3>
-          <p>Consolidated Account Statement from <strong>mycams.com</strong> or <strong>kfintech.com</strong> — covers all your mutual fund holdings and transaction history (2016–2026) in one file.</p>
+          <h3><i className="ti ti-file-type-pdf" aria-hidden="true" style={{ marginRight: 6 }} />CAS — CAMS + KFinTech Consolidated Statement</h3>
+          <p>Get it from <a href="https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement" target="_blank" rel="noopener">CAMS</a> or <a href="https://mfs.kfintech.com/investor/General/InvestorTransactionReport" target="_blank" rel="noopener">KFintech</a> with <strong>Detailed</strong> option selected — covers all your mutual fund holdings and transaction history in one file.</p>
           <input type="password" placeholder="PDF password (your PAN in capitals)"
             value={password} onChange={(e) => setPassword(e.target.value)} />
           <input type="file" accept="application/pdf" onChange={handleCamsKfinCas} disabled={busy} />
