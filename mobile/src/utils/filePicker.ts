@@ -55,3 +55,7 @@ export async function readFileAsBase64(uri: string): Promise<ArrayBuffer> {
 export async function readFileAsText(uri: string): Promise<string> {
   return await FolioFilePicker.readFileAsText(uri);
 }
+
+export async function readPdfAsText(uri: string): Promise<string> {
+  return await FolioFilePicker.readPdfAsText(uri);
+}

@@ -18,6 +18,10 @@ import com.facebook.react.bridge.Arguments;
 
 import java.io.InputStream;
 
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader;
+import com.tom_roush.pdfbox.pdmodel.PDDocument;
+import com.tom_roush.pdfbox.text.PDFTextStripper;
+
 public class FilePickerModule extends ReactContextBaseJavaModule {
 
   private static final int PICK_PDF_REQ = 1001;
@@ -105,6 +109,22 @@ public class FilePickerModule extends ReactContextBaseJavaModule {
       promise.resolve(text);
     } catch (Exception e) {
       promise.reject("READ_ERROR", e.getMessage());
+    }
+  }
+
+  @ReactMethod
+  public void readPdfAsText(String uri, Promise promise) {
+    try {
+      Uri u = Uri.parse(uri);
+      InputStream is = getReactApplicationContext().getContentResolver().openInputStream(u);
+      PDDocument doc = PDDocument.load(is);
+      PDFTextStripper stripper = new PDFTextStripper();
+      String text = stripper.getText(doc);
+      doc.close();
+      is.close();
+      promise.resolve(text);
+    } catch (Exception e) {
+      promise.reject("PDF_ERROR", e.getMessage());
     }
   }
 }

@@ -8,10 +8,10 @@ import {
   StyleSheet, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { usePortfolio } from '../hooks/usePortfolio';
-import { parseCamsKfinCas } from '../parsers/casPdf';
+import { parseCamsKfinCasText } from '../parsers/casPdf';
 import { mergeZerodhaFiles } from '../parsers/zerodha';
 import { parseTradebookCsv } from '../parsers/tradebook';
-import { pickPdf, pickCsvs, pickCsv, readFileAsBase64, readFileAsText } from '../utils/filePicker';
+import { pickPdf, pickCsvs, pickCsv, readPdfAsText, readFileAsText } from '../utils/filePicker';
 
 export default function UploadScreen() {
   const { state, onHoldings, onTrades } = usePortfolio();
@@ -29,8 +29,8 @@ export default function UploadScreen() {
   const handleCas = async () => {
     const res = await pickPdf();
     if (res.canceled || !res.uri) return;
-    const buffer = await readFileAsBase64(res.uri);
-    const parsed = await parseCamsKfinCas(buffer, password || undefined);
+    const text = await readPdfAsText(res.uri);
+    const parsed = parseCamsKfinCasText(text);
     if (parsed.holdings.length) onHoldings(parsed.holdings);
     if (parsed.trades.length) onTrades(parsed.trades);
     setMsg(`Imported ${parsed.holdings.length} holdings, ${parsed.trades.length} transactions`);
