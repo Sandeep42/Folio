@@ -10,17 +10,26 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Text, ActivityIndicator, View, StyleSheet } from 'react-native';
 
-import { loadState, saveState, clearState, PortfolioState } from './src/storage';
+import { loadState, saveState, PortfolioState } from './src/storage';
 import { HoldingView } from './src/models/HoldingView';
 import { analyze, AnalyzeResult } from './src/services/analysis';
 
-// Lazy-import screens so we can build them incrementally
 import UploadScreen from './src/screens/UploadScreen';
 import HoldingsScreen from './src/screens/HoldingsScreen';
 import HoldingDetailScreen from './src/screens/HoldingDetailScreen';
+import TaxHarvestScreen from './src/screens/TaxHarvestScreen';
+import CapitalGainsScreen from './src/screens/CapitalGainsScreen';
+import AllocationScreen from './src/screens/AllocationScreen';
+import ElssTrackerScreen from './src/screens/ElssTrackerScreen';
+import FundPnlScreen from './src/screens/FundPnlScreen';
+import RollingReturnsScreen from './src/screens/RollingReturnsScreen';
 
 export type RootTabParamList = {
   Portfolio: undefined;
+  TaxHarvest: undefined;
+  CapitalGains: undefined;
+  Allocation: undefined;
+  More: undefined;
   Upload: undefined;
 };
 
@@ -29,23 +38,33 @@ export type PortfolioStackParamList = {
   HoldingDetail: { holding: HoldingView };
 };
 
-const Tab = createBottomTabNavigator<RootTabParamList>();
-const Stack = createNativeStackNavigator<PortfolioStackParamList>();
+export type MoreStackParamList = {
+  MoreMenu: undefined;
+  ElssTracker: undefined;
+  FundPnl: undefined;
+  RollingReturns: undefined;
+};
 
-function PortfolioStack() {
+const Tab = createBottomTabNavigator<RootTabParamList>();
+const PortfolioStack = createNativeStackNavigator<PortfolioStackParamList>();
+const MoreStack = createNativeStackNavigator<MoreStackParamList>();
+
+function PortfolioStackNav() {
   return (
-    <Stack.Navigator>
-      <Stack.Screen
-        name="HoldingsList"
-        component={HoldingsScreen}
-        options={{ title: 'Portfolio' }}
-      />
-      <Stack.Screen
-        name="HoldingDetail"
-        component={HoldingDetailScreen}
-        options={{ title: 'Detail' }}
-      />
-    </Stack.Navigator>
+    <PortfolioStack.Navigator>
+      <PortfolioStack.Screen name="HoldingsList" component={HoldingsScreen} options={{ title: 'Portfolio' }} />
+      <PortfolioStack.Screen name="HoldingDetail" component={HoldingDetailScreen} options={{ title: 'Detail' }} />
+    </PortfolioStack.Navigator>
+  );
+}
+
+function MoreStackNav() {
+  return (
+    <MoreStack.Navigator>
+      <MoreStack.Screen name="ElssTracker" component={ElssTrackerScreen} options={{ title: 'ELSS Tracker' }} />
+      <MoreStack.Screen name="FundPnl" component={FundPnlScreen} options={{ title: 'Fund P&L' }} />
+      <MoreStack.Screen name="RollingReturns" component={RollingReturnsScreen} options={{ title: 'Rolling Returns' }} />
+    </MoreStack.Navigator>
   );
 }
 
@@ -112,18 +131,22 @@ export default function App() {
   return (
     <NavigationContainer>
       <Tab.Navigator screenOptions={{ headerShown: false }}>
-        <Tab.Screen
-          name="Portfolio"
-          options={{ title: 'Portfolio' }}
-        >
-          {() => (
-            <PortfolioStack />
-          )}
+        <Tab.Screen name="Portfolio" options={{ title: 'Portfolio' }}>
+          {() => <PortfolioStackNav />}
         </Tab.Screen>
-        <Tab.Screen
-          name="Upload"
-          options={{ title: 'Import' }}
-        >
+        <Tab.Screen name="TaxHarvest" options={{ title: 'Harvest' }}>
+          {() => <TaxHarvestScreen />}
+        </Tab.Screen>
+        <Tab.Screen name="CapitalGains" options={{ title: 'Gains' }}>
+          {() => <CapitalGainsScreen />}
+        </Tab.Screen>
+        <Tab.Screen name="Allocation" options={{ title: 'Allocation' }}>
+          {() => <AllocationScreen />}
+        </Tab.Screen>
+        <Tab.Screen name="More" options={{ title: 'More' }}>
+          {() => <MoreStackNav />}
+        </Tab.Screen>
+        <Tab.Screen name="Upload" options={{ title: 'Import' }}>
           {() => (
             <UploadScreen
               holdings={state.holdings}
