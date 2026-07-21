@@ -1,15 +1,17 @@
 /**
- * TaxHarvestScreen — Gain & loss harvesting suggestions
+ * TaxHarvestScreen — Gain & loss harvesting suggestions from context
  */
 
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
-import { inr, pct } from '../utils/format';
-
-const DEMO: any[] = [];
+import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-native';
+import { usePortfolio } from '../hooks/usePortfolio';
+import { inr } from '../utils/format';
 
 export default function TaxHarvestScreen() {
-  const suggestions = DEMO;
+  const { result, loading } = usePortfolio();
+  const suggestions = result?.harvest?.suggestions || [];
+
+  if (loading) return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
 
   if (!suggestions.length) {
     return (
@@ -22,13 +24,15 @@ export default function TaxHarvestScreen() {
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      {suggestions.map((s, i) => (
+      {suggestions.map((s: any, i: number) => (
         <View key={i} style={styles.card}>
           <View style={styles.cardHeader}>
-            <Text style={styles.badge}>{s.kind === 'gain_harvest' ? 'GAIN' : 'LOSS'}</Text>
-            <Text style={styles.cardTitle}>{s.name}</Text>
+            <Text style={[styles.badge, s.kind === 'gain_harvest' ? styles.badgeGain : styles.badgeLoss]}>
+              {s.kind === 'gain_harvest' ? 'GAIN' : 'LOSS'}
+            </Text>
+            <Text style={styles.cardTitle} numberOfLines={2}>{s.name}</Text>
           </View>
-          <Text style={styles.gain}>₹{inr(s.estimated_gain)}</Text>
+          <Text style={styles.gain}>{inr(s.estimated_gain)}</Text>
           <Text style={styles.rationale}>{s.rationale}</Text>
         </View>
       ))}
@@ -44,8 +48,10 @@ const styles = StyleSheet.create({
   emptyDesc: { fontSize: 14, color: '#666', textAlign: 'center' },
   card: { backgroundColor: '#fff', borderRadius: 10, padding: 14 },
   cardHeader: { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
-  badge: { fontSize: 10, fontWeight: '700', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, backgroundColor: '#e8f5e9', color: '#2e7d32', overflow: 'hidden' },
+  badge: { fontSize: 10, fontWeight: '700', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4, overflow: 'hidden' },
+  badgeGain: { backgroundColor: '#e8f5e9', color: '#2e7d32' },
+  badgeLoss: { backgroundColor: '#fce4ec', color: '#c62828' },
   cardTitle: { fontSize: 14, fontWeight: '600', flex: 1 },
-  gain: { fontSize: 20, fontWeight: '700', fontFamily: 'monospace', marginBottom: 8 },
+  gain: { fontSize: 20, fontWeight: '700', marginBottom: 8 },
   rationale: { fontSize: 12, color: '#555', lineHeight: 18 },
 });

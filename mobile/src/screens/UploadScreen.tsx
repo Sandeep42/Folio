@@ -8,17 +8,13 @@ import {
   StyleSheet, ScrollView, ActivityIndicator,
 } from 'react-native';
 import DocumentPicker from 'react-native-document-picker';
+import { usePortfolio } from '../hooks/usePortfolio';
 import { parseCamsKfinCas } from '../parsers/casPdf';
 import { mergeZerodhaFiles } from '../parsers/zerodha';
 import { parseTradebookCsv } from '../parsers/tradebook';
 
-interface Props {
-  holdings: any[];
-  onHoldings: (h: any[]) => void;
-  onTrades: (t: any[]) => void;
-}
-
-export default function UploadScreen({ holdings, onHoldings, onTrades }: Props) {
+export default function UploadScreen() {
+  const { state, onHoldings, onTrades } = usePortfolio();
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
@@ -33,8 +29,7 @@ export default function UploadScreen({ holdings, onHoldings, onTrades }: Props) 
   const handleCas = async () => {
     const res = await DocumentPicker.pick({ type: [DocumentPicker.types.pdf] });
     if (!res[0]) return;
-    const file = res[0];
-    const response = await fetch(file.uri);
+    const response = await fetch(res[0].uri);
     const buffer = await response.arrayBuffer();
     const parsed = await parseCamsKfinCas(buffer, password || undefined);
     if (parsed.holdings.length) onHoldings(parsed.holdings);
@@ -48,12 +43,7 @@ export default function UploadScreen({ holdings, onHoldings, onTrades }: Props) 
       allowMultiSelection: true,
     });
     if (!res.length) return;
-    const texts = await Promise.all(
-      res.map(async (f) => {
-        const r = await fetch(f.uri);
-        return r.text();
-      }),
-    );
+    const texts = await Promise.all(res.map(async (f) => { const r = await fetch(f.uri); return r.text(); }));
     const parsed = mergeZerodhaFiles(texts);
     if (parsed.trades.length) onTrades(parsed.trades);
     setMsg(`Imported ${parsed.trades.length} trades from ${res.length} file(s)`);
@@ -69,49 +59,31 @@ export default function UploadScreen({ holdings, onHoldings, onTrades }: Props) 
     setMsg(`Imported ${parsed.trades.length} trades`);
   };
 
-  const Section = ({ title, desc, onPress }: { title: string; desc: string; onPress: () => void }) => (
-    <TouchableOpacity style={styles.card} onPress={onPress} disabled={busy}>
-      <Text style={styles.cardTitle}>{title}</Text>
-      <Text style={styles.cardDesc}>{desc}</Text>
-    </TouchableOpacity>
-  );
-
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {msg ? <Text style={styles.msg}>{msg}</Text> : null}
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>CAS — CAMS + KFinTech Consolidated Statement</Text>
-        <Text style={styles.cardDesc}>
-          Get it from CAMS with Detailed option selected — covers all MF holdings and history.
-        </Text>
-        <TextInput
-          style={styles.input}
-          placeholder="PDF password"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+      <View style={styles.section}>
+        <Text style={styles.title}>CAS — CAMS + KFinTech Consolidated Statement</Text>
+        <Text style={styles.desc}>Get it from CAMS with Detailed option — covers all MF holdings and history.</Text>
+        <TextInput style={styles.input} placeholder="PDF password" value={password}
+          onChangeText={setPassword} secureTextEntry />
         <TouchableOpacity style={styles.btn} onPress={handleCas} disabled={busy}>
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Pick PDF</Text>}
         </TouchableOpacity>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Zerodha tradebook (CSV)</Text>
-        <Text style={styles.cardDesc}>
-          Console → Reports → Tradebook. Select multiple FY files at once.
-        </Text>
+      <View style={styles.section}>
+        <Text style={styles.title}>Zerodha tradebook (CSV)</Text>
+        <Text style={styles.desc}>Console → Reports → Tradebook. Select multiple FY files.</Text>
         <TouchableOpacity style={styles.btn} onPress={handleZerodha} disabled={busy}>
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Pick CSV(s)</Text>}
         </TouchableOpacity>
       </View>
 
-      <View style={styles.card}>
-        <Text style={styles.cardTitle}>Generic tradebook (CSV)</Text>
-        <Text style={styles.cardDesc}>
-          Any broker: columns isin, date, side, quantity, price.
-        </Text>
+      <View style={styles.section}>
+        <Text style={styles.title}>Generic tradebook (CSV)</Text>
+        <Text style={styles.desc}>Any broker: columns isin, date, side, quantity, price.</Text>
         <TouchableOpacity style={styles.btn} onPress={handleTradebook} disabled={busy}>
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Pick CSV</Text>}
         </TouchableOpacity>
@@ -123,10 +95,10 @@ export default function UploadScreen({ holdings, onHoldings, onTrades }: Props) 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   content: { padding: 16, gap: 16 },
-  msg: { backgroundColor: '#e8f5e9', color: '#2e7d32', padding: 12, borderRadius: 8, marginBottom: 8 },
-  card: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 8 },
-  cardTitle: { fontSize: 16, fontWeight: '600' },
-  cardDesc: { fontSize: 13, color: '#666' },
+  msg: { backgroundColor: '#e8f5e9', color: '#2e7d32', padding: 12, borderRadius: 8 },
+  section: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 10 },
+  title: { fontSize: 16, fontWeight: '600' },
+  desc: { fontSize: 13, color: '#666' },
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, fontSize: 14 },
   btn: { backgroundColor: '#1976d2', borderRadius: 8, padding: 12, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
