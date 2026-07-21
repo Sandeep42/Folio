@@ -36,6 +36,7 @@ jobs:
       - name: Build Android APK
         run: |
           cd mobile/android
+          chmod +x gradlew
           ./gradlew assembleRelease --no-daemon
 
       - name: Upload APK
