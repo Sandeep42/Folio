@@ -220,8 +220,8 @@ function parseText(fullText: string): CamsKfinParseResult {
 
     if (!inFolio) { i++; continue; }
 
-    if (ln.startsWith('Folio No:')) { curFolio = ln.split('Folio No:', 1)[1].trim().split(' / ')[0]; i++; continue; }
-    if (ln.startsWith('Registrar :')) { curRegistrar = ln.split('Registrar :', 1)[1].trim(); i++; continue; }
+    if (ln.startsWith('Folio No:')) { curFolio = ln.split('Folio No:')[1].trim().split(' / ')[0]; i++; continue; }
+    if (ln.startsWith('Registrar :')) { curRegistrar = ln.split('Registrar :')[1].trim(); i++; continue; }
     if (ln.startsWith('Opening Unit Balance:')) { readingTxns = true; i++; continue; }
     if (!readingTxns) { i++; continue; }
 
