@@ -3,7 +3,7 @@
  *
  * Mutual funds: AMFI publishes all NAVs daily as a semicolon-delimited text
  *               file at portal.amfiindia.com. Parsed by ISIN.
- * Stocks:       yahoo-finance2 npm package by NSE/BSE ticker symbol.
+ * Stocks:       Yahoo Finance v8 chart API via plain fetch — no npm package.
  *               Symbols without a exchange suffix get .NS appended for NSE.
  */
 
@@ -75,32 +75,36 @@ interface StockQuote {
 }
 
 /**
- * Fetch current stock prices for a list of symbols via yahoo-finance2.
+ * Fetch current stock prices via Yahoo Finance v8 chart API (no npm package).
  * Returns a map keyed by the original symbol (without .NS suffix).
  */
 export async function fetchStockPrices(symbols: string[]): Promise<Record<string, StockQuote>> {
   if (!symbols.length) return {};
 
-  const { default: yf } = await import('yahoo-finance2');
-
   const symMap: Record<string, string> = {};
   for (const s of symbols) {
-    symMap[s] = yfSym(s);
+    symMap[s] = s.includes('.') ? s : `${s}.NS`;
   }
-  const yfSymbols = Array.from(new Set(Object.values(symMap)));
-  const out: Record<string, StockQuote> = {};
 
+  const out: Record<string, StockQuote> = {};
   for (const [origSym, yfSymStr] of Object.entries(symMap)) {
     try {
-      const result: any = await yf.quote(yfSymStr);
-      if (!result || !result.regularMarketPrice) continue;
-      const price = result.regularMarketPrice;
-      const dateObj = result.regularMarketTime
-        ? new Date(result.regularMarketTime)
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSymStr)}?interval=1d&range=5d`;
+      const resp = await fetch(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+      });
+      if (!resp.ok) continue;
+      const json: any = await resp.json();
+      const meta = json?.chart?.result?.[0]?.meta;
+      if (!meta) continue;
+      const price = meta.regularMarketPrice;
+      if (price == null) continue;
+      const ts = meta.regularMarketTime
+        ? new Date(meta.regularMarketTime * 1000)
         : new Date();
       out[origSym] = {
         price: typeof price === 'number' ? price : parseFloat(String(price)),
-        price_date: dateObj.toISOString().slice(0, 10),
+        price_date: ts.toISOString().slice(0, 10),
       };
     } catch {
       // symbol not found / delisted — skip silently
