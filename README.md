@@ -73,7 +73,6 @@ Upload your data on Folio's **Import data** page:
 
 1. **CAS — CAMS + KFinTech Consolidated Statement (PDF)** — get it from
    [CAMS](https://www.camsonline.com/Investors/Statements/Consolidated-Account-Statement)
-   or [KFintech](https://mfs.kfintech.com/investor/General/InvestorTransactionReport)
    with the **Detailed** option. Password is your PAN in capitals. This
    single file covers all your mutual fund holdings and transaction history.
 
@@ -83,8 +82,6 @@ Upload your data on Folio's **Import data** page:
    Needed for stock/ETF trades not in the CAS. Select multiple FY files at
    once — duplicates removed automatically. Or use the Generic tradebook
    option for any other broker (columns: `isin,date,side,quantity,price`).
-
-![Folio holdings view](docs/screenshots/holdings.png)
 
 That's it — you can also add a generic tradebook CSV from any broker.
 See the Import page itself for full details on each option.
