@@ -8,6 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 import { loadState, saveState, PortfolioState } from './src/storage';
 import { HoldingView } from './src/models/HoldingView';
@@ -135,18 +136,17 @@ export default function App() {
         <Tab.Navigator
           screenOptions={{
             headerShown: false,
-            tabBarIcon: () => null,
-            tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
             tabBarActiveTintColor: '#1976d2',
             tabBarInactiveTintColor: '#999',
+            tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
             tabBarStyle: { paddingBottom: 4, paddingTop: 4 },
           }}>
-          <Tab.Screen name="Portfolio" options={{ tabBarLabel: 'Portfolio' }} children={() => <PortfolioStackNav />} />
-          <Tab.Screen name="TaxHarvest" options={{ tabBarLabel: 'Harvest' }} children={() => <TaxHarvestScreen />} />
-          <Tab.Screen name="CapitalGains" options={{ tabBarLabel: 'Gains' }} children={() => <CapitalGainsScreen />} />
-          <Tab.Screen name="Allocation" options={{ tabBarLabel: 'Allocation' }} children={() => <AllocationScreen />} />
-          <Tab.Screen name="More" options={{ tabBarLabel: 'More' }} children={() => <MoreStackNav />} />
-          <Tab.Screen name="Upload" options={{ tabBarLabel: 'Import' }}>
+          <Tab.Screen name="Portfolio" options={{ tabBarLabel: 'Portfolio', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="finance" size={22} color={color} /> }} children={() => <PortfolioStackNav />} />
+          <Tab.Screen name="TaxHarvest" options={{ tabBarLabel: 'Harvest', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="leaf" size={22} color={color} /> }} children={() => <TaxHarvestScreen />} />
+          <Tab.Screen name="CapitalGains" options={{ tabBarLabel: 'Gains', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="trending-up" size={22} color={color} /> }} children={() => <CapitalGainsScreen />} />
+          <Tab.Screen name="Allocation" options={{ tabBarLabel: 'Allocation', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="pie-chart" size={22} color={color} /> }} children={() => <AllocationScreen />} />
+          <Tab.Screen name="More" options={{ tabBarLabel: 'More', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="dots-horizontal" size={22} color={color} /> }} children={() => <MoreStackNav />} />
+          <Tab.Screen name="Upload" options={{ tabBarLabel: 'Import', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="file-upload" size={22} color={color} /> }}>
             {() => <UploadScreen />}
           </Tab.Screen>
         </Tab.Navigator>
