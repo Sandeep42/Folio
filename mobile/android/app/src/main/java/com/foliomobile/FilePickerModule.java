@@ -113,11 +113,16 @@ public class FilePickerModule extends ReactContextBaseJavaModule {
   }
 
   @ReactMethod
-  public void readPdfAsText(String uri, Promise promise) {
+  public void readPdfAsText(String uri, String password, Promise promise) {
     try {
       Uri u = Uri.parse(uri);
       InputStream is = getReactApplicationContext().getContentResolver().openInputStream(u);
-      PDDocument doc = PDDocument.load(is);
+      PDDocument doc;
+      if (password != null && !password.isEmpty()) {
+        doc = PDDocument.load(is, password);
+      } else {
+        doc = PDDocument.load(is);
+      }
       PDFTextStripper stripper = new PDFTextStripper();
       String text = stripper.getText(doc);
       doc.close();

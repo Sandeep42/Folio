@@ -29,7 +29,7 @@ export default function UploadScreen() {
   const handleCas = async () => {
     const res = await pickPdf();
     if (res.canceled || !res.uri) return;
-    const text = await readPdfAsText(res.uri);
+    const text = await readPdfAsText(res.uri, password);
     const parsed = parseCamsKfinCasText(text);
     if (parsed.holdings.length) onHoldings(parsed.holdings);
     if (parsed.trades.length) onTrades(parsed.trades);

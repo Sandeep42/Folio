@@ -56,6 +56,6 @@ export async function readFileAsText(uri: string): Promise<string> {
   return await FolioFilePicker.readFileAsText(uri);
 }
 
-export async function readPdfAsText(uri: string): Promise<string> {
-  return await FolioFilePicker.readPdfAsText(uri);
+export async function readPdfAsText(uri: string, password?: string): Promise<string> {
+  return await FolioFilePicker.readPdfAsText(uri, password || '');
 }

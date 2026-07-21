@@ -6,7 +6,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, View, StyleSheet, Text, SafeAreaView } from 'react-native';
 
 import { loadState, saveState, PortfolioState } from './src/storage';
 import { HoldingView } from './src/models/HoldingView';
@@ -128,18 +128,28 @@ export default function App() {
 
   return (
     <PortfolioCtx.Provider value={ctx}>
-      <NavigationContainer>
-        <Tab.Navigator screenOptions={{ headerShown: false }}>
-          <Tab.Screen name="Portfolio" options={{ title: 'Portfolio' }} children={() => <PortfolioStackNav />} />
-          <Tab.Screen name="TaxHarvest" options={{ title: 'Harvest' }} children={() => <TaxHarvestScreen />} />
-          <Tab.Screen name="CapitalGains" options={{ title: 'Gains' }} children={() => <CapitalGainsScreen />} />
-          <Tab.Screen name="Allocation" options={{ title: 'Allocation' }} children={() => <AllocationScreen />} />
-          <Tab.Screen name="More" options={{ title: 'More' }} children={() => <MoreStackNav />} />
-          <Tab.Screen name="Upload" options={{ title: 'Import' }}>
+      <SafeAreaView style={{ flex: 1 }}>
+        <NavigationContainer>
+        <Tab.Navigator
+          screenOptions={{
+            headerShown: false,
+            tabBarIcon: () => null,
+            tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+            tabBarActiveTintColor: '#1976d2',
+            tabBarInactiveTintColor: '#999',
+            tabBarStyle: { paddingBottom: 4, paddingTop: 4 },
+          }}>
+          <Tab.Screen name="Portfolio" options={{ tabBarLabel: 'Portfolio' }} children={() => <PortfolioStackNav />} />
+          <Tab.Screen name="TaxHarvest" options={{ tabBarLabel: 'Harvest' }} children={() => <TaxHarvestScreen />} />
+          <Tab.Screen name="CapitalGains" options={{ tabBarLabel: 'Gains' }} children={() => <CapitalGainsScreen />} />
+          <Tab.Screen name="Allocation" options={{ tabBarLabel: 'Allocation' }} children={() => <AllocationScreen />} />
+          <Tab.Screen name="More" options={{ tabBarLabel: 'More' }} children={() => <MoreStackNav />} />
+          <Tab.Screen name="Upload" options={{ tabBarLabel: 'Import' }}>
             {() => <UploadScreen />}
           </Tab.Screen>
         </Tab.Navigator>
       </NavigationContainer>
+      </SafeAreaView>
     </PortfolioCtx.Provider>
   );
 }
