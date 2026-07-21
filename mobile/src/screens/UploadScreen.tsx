@@ -18,9 +18,10 @@ export default function UploadScreen() {
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [warnings, setWarnings] = useState<string[]>([]);
 
   const wrap = async (fn: () => Promise<void>) => {
-    setBusy(true); setMsg('');
+    setBusy(true); setMsg(''); setWarnings([]);
     try { await fn(); }
     catch (e: any) { Alert.alert('Error', e.message); }
     finally { setBusy(false); }
@@ -34,6 +35,7 @@ export default function UploadScreen() {
     if (parsed.holdings.length) onHoldings(parsed.holdings);
     if (parsed.trades.length) onTrades(parsed.trades);
     setMsg(`Imported ${parsed.holdings.length} holdings, ${parsed.trades.length} transactions`);
+    setWarnings(parsed.warnings);
   };
 
   const handleZerodha = async () => {
@@ -57,6 +59,9 @@ export default function UploadScreen() {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {msg ? <Text style={styles.msg}>{msg}</Text> : null}
+      {warnings.map((w, i) => (
+        <Text key={i} style={styles.warning} numberOfLines={3}>{w}</Text>
+      ))}
 
       <View style={styles.section}>
         <Text style={styles.title}>CAS — CAMS + KFinTech Consolidated Statement</Text>
@@ -91,6 +96,7 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   content: { padding: 16, gap: 16 },
   msg: { backgroundColor: '#e8f5e9', color: '#2e7d32', padding: 12, borderRadius: 8 },
+  warning: { backgroundColor: '#fff3e0', color: '#e65100', padding: 10, borderRadius: 8, fontSize: 12 },
   section: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 10 },
   title: { fontSize: 16, fontWeight: '600' },
   desc: { fontSize: 13, color: '#666' },

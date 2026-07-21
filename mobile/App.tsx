@@ -6,7 +6,7 @@ import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View, StyleSheet, Text } from 'react-native';
+import { ActivityIndicator, View, StyleSheet, Text, StatusBar, Platform } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -52,7 +52,11 @@ const MStack = createNativeStackNavigator<MoreStackParamList>();
 
 function PortfolioStackNav() {
   return (
-    <PStack.Navigator>
+    <PStack.Navigator screenOptions={{
+      headerStyle: { backgroundColor: '#1976d2' },
+      headerTintColor: '#fff',
+      headerTitleStyle: { fontWeight: '600' },
+    }}>
       <PStack.Screen name="HoldingsList" component={HoldingsScreen} options={{ title: 'Portfolio' }} />
       <PStack.Screen name="HoldingDetail" component={HoldingDetailScreen} options={{ title: 'Detail' }} />
     </PStack.Navigator>
@@ -61,7 +65,11 @@ function PortfolioStackNav() {
 
 function MoreStackNav() {
   return (
-    <MStack.Navigator>
+    <MStack.Navigator screenOptions={{
+      headerStyle: { backgroundColor: '#1976d2' },
+      headerTintColor: '#fff',
+      headerTitleStyle: { fontWeight: '600' },
+    }}>
       <MStack.Screen name="ElssTracker" component={ElssTrackerScreen} options={{ title: 'ELSS Tracker' }} />
       <MStack.Screen name="FundPnl" component={FundPnlScreen} options={{ title: 'Fund P&L' }} />
       <MStack.Screen name="RollingReturns" component={RollingReturnsScreen} options={{ title: 'Rolling Returns' }} />
@@ -131,6 +139,7 @@ export default function App() {
   return (
     <PortfolioCtx.Provider value={ctx}>
       <SafeAreaProvider>
+        <StatusBar barStyle="light-content" backgroundColor="#1976d2" />
         <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
         <NavigationContainer>
         <Tab.Navigator
