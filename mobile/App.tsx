@@ -131,7 +131,7 @@ export default function App() {
   return (
     <PortfolioCtx.Provider value={ctx}>
       <SafeAreaProvider>
-        <SafeAreaView style={{ flex: 1 }} edges={['top', 'bottom']}>
+        <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
         <NavigationContainer>
         <Tab.Navigator
           screenOptions={{

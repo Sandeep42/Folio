@@ -10,6 +10,7 @@ import com.facebook.react.ReactPackage
 import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.ViewManager
+import com.tom_roush.pdfbox.android.PDFBoxResourceLoader
 
 class FolioFilePickerPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
@@ -34,6 +35,7 @@ class MainApplication : Application(), ReactApplication {
 
   override fun onCreate() {
     super.onCreate()
+    PDFBoxResourceLoader.init(this)
     loadReactNative(this)
   }
 }

@@ -61,7 +61,7 @@ export default function UploadScreen() {
       <View style={styles.section}>
         <Text style={styles.title}>CAS — CAMS + KFinTech Consolidated Statement</Text>
         <Text style={styles.desc}>Get it from CAMS with Detailed option — covers all MF holdings and history.</Text>
-        <TextInput style={styles.input} placeholder="PDF password" value={password}
+        <TextInput style={styles.input} placeholder="PDF password" placeholderTextColor="#999" value={password}
           onChangeText={setPassword} secureTextEntry />
         <TouchableOpacity style={styles.btn} onPress={handleCas} disabled={busy}>
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Pick PDF</Text>}
@@ -94,7 +94,7 @@ const styles = StyleSheet.create({
   section: { backgroundColor: '#fff', borderRadius: 12, padding: 16, gap: 10 },
   title: { fontSize: 16, fontWeight: '600' },
   desc: { fontSize: 13, color: '#666' },
-  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, fontSize: 14 },
+  input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, fontSize: 14, color: '#000' },
   btn: { backgroundColor: '#1976d2', borderRadius: 8, padding: 12, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });
