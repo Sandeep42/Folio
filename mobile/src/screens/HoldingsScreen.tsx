@@ -17,6 +17,7 @@ type Nav = NativeStackNavigationProp<PortfolioStackParamList, 'HoldingsList'>;
 export default function HoldingsScreen() {
   const nav = useNavigation<Nav>();
   const { result, loading, refreshPrices } = usePortfolio();
+  const error = result?.warnings?.join(' · ') || '';
   const views = result?.holdings || [];
 
   const totalInvested = useMemo(() => views.reduce((s, v) => s + (v.invested || 0), 0), [views]);
@@ -62,11 +63,7 @@ export default function HoldingsScreen() {
       </View>
 
       {/* Warning banner */}
-      {result?.warnings?.map((w, i) => (
-        <View key={i} style={styles.warning}>
-          <Text style={styles.warningText}>{w}</Text>
-        </View>
-      ))}
+      {error ? <View style={styles.warning}><Text style={styles.warningText}>{error}</Text></View> : null}
 
       <FlatList
         data={views}

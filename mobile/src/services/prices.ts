@@ -32,7 +32,10 @@ export async function fetchAmfiNavs(force = false): Promise<Record<string, AmfiR
     return amfiCache.byIsin;
   }
 
-  const resp = await fetch(AMFI_NAV_URL);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 20000);
+  const resp = await fetch(AMFI_NAV_URL, { signal: controller.signal as any });
+  clearTimeout(timeout);
   if (!resp.ok) throw new Error(`AMFI HTTP ${resp.status}`);
   const text = await resp.text();
 
@@ -89,10 +92,14 @@ export async function fetchStockPrices(symbols: string[]): Promise<Record<string
   const out: Record<string, StockQuote> = {};
   for (const [origSym, yfSymStr] of Object.entries(symMap)) {
     try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
       const url = `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(yfSymStr)}?interval=1d&range=5d`;
       const resp = await fetch(url, {
+        signal: controller.signal as any,
         headers: { 'User-Agent': 'Mozilla/5.0' },
       });
+      clearTimeout(timeout);
       if (!resp.ok) continue;
       const json: any = await resp.json();
       const meta = json?.chart?.result?.[0]?.meta;
