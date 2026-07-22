@@ -81,11 +81,11 @@ export interface ParsedHolding {
   isin: string;
   name: string;
   quantity: number;
-  nav: number | null;
+  last_price: number | null;
   market_value: number | null;
   avg_cost: number | null;
   folio: string | null;
-  registrar: string | null;
+  price_as_of: string | null;
 }
 
 export interface ParsedTrade {
@@ -177,8 +177,8 @@ function parseText(fullText: string): CamsKfinParseResult {
       const avg = totCost && closUnits ? Math.round(totCost / closUnits * 10000) / 10000 : null;
       result.holdings.push({
         isin: curIsin, name: (curScheme || '').slice(0, 120),
-        quantity: closUnits, nav: closNav, market_value: closMv,
-        avg_cost: avg, folio: curFolio, registrar: curRegistrar,
+        quantity: closUnits, last_price: closNav, market_value: closMv,
+        avg_cost: avg, folio: curFolio, price_as_of: asOfDate,
       });
     }
     for (const t of folioTrades) { t.isin = curIsin!; t.folio = curFolio; result.trades.push(t); }
@@ -314,12 +314,13 @@ function parseText(fullText: string): CamsKfinParseResult {
     if (merged[key]) {
       const m = merged[key]; m.quantity += h.quantity;
       m.market_value = (m.market_value || 0) + (h.market_value || 0);
-      if (m.quantity && m.market_value) m.nav = Math.round(m.market_value / m.quantity * 10000) / 10000;
+      if (m.quantity && m.market_value) m.last_price = Math.round(m.market_value / m.quantity * 10000) / 10000;
     } else { merged[key] = h; }
   }
   result.holdings = Object.values(merged).filter(h => h.quantity > 0);
   if (asOfDate) result.as_of = asOfDate;
   if (!result.holdings.length) result.warnings.push('No holdings recognised. Raw text: ' + rawPreview);
+  else if (!result.trades.length) result.warnings.push('Found ' + result.holdings.length + ' holdings but 0 trades. Raw text sample: ' + rawPreview);
   if (result.skipped_txns) result.warnings.push(`${result.skipped_txns} non-financial rows skipped.`);
   return result;
 }

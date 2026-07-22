@@ -16,9 +16,31 @@ type Nav = NativeStackNavigationProp<PortfolioStackParamList, 'HoldingsList'>;
 
 export default function HoldingsScreen() {
   const nav = useNavigation<Nav>();
-  const { result, loading, refreshPrices } = usePortfolio();
+  const { state, result, loading, refreshPrices } = usePortfolio();
   const error = result?.warnings?.join(' · ') || '';
-  const views = result?.holdings || [];
+
+  // Use analyzed result if it has prices, otherwise fall back to raw holdings from state
+  const views = (result?.holdings?.length && result.holdings.some(h => h.last_price != null))
+    ? result.holdings
+    : (state?.holdings || []).map(h => {
+        const price = h.last_price || null;
+        const cost = h.avg_cost || null;
+        const qty = h.quantity || 0;
+        const cur = price ? price * qty : null;
+        const inv = cost ? cost * qty : null;
+        return {
+          isin: h.isin, name: h.name, asset_type: h.asset_type,
+          quantity: qty, folio: h.folio, symbol: h.symbol,
+          avg_cost: cost,
+          last_price: price,
+          price_as_of: h.price_as_of || null,
+          invested: inv ? Math.round(inv * 100) / 100 : null,
+          current_value: cur ? Math.round(cur * 100) / 100 : null,
+          pnl: (cur != null && inv != null) ? Math.round((cur - inv) * 100) / 100 : null,
+          pnl_pct: null, xirr: null, cost_basis_type: 'normal',
+          xirr_excluded: true,
+        } as any;
+      });
 
   const totalInvested = useMemo(() => views.reduce((s, v) => s + (v.invested || 0), 0), [views]);
   const totalCurrent = useMemo(() => views.reduce((s, v) => s + (v.current_value || 0), 0), [views]);

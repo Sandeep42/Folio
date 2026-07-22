@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { parseCamsKfinCasText } from '../parsers/casPdf';
+import { preprocessPdfBox } from '../parsers/pdfboxCompat';
 import { mergeZerodhaFiles } from '../parsers/zerodha';
 import { parseTradebookCsv } from '../parsers/tradebook';
 import { pickPdf, pickCsvs, pickCsv, readPdfAsText, readFileAsText } from '../utils/filePicker';
@@ -31,7 +32,9 @@ export default function UploadScreen() {
     const res = await pickPdf();
     if (res.canceled || !res.uri) return;
     const text = await readPdfAsText(res.uri, password);
-    const parsed = parseCamsKfinCasText(text);
+    // PDFBox outputs cells on one line — pre-process if needed
+    const processed = preprocessPdfBox(text);
+    const parsed = parseCamsKfinCasText(processed);
     if (parsed.holdings.length) onHoldings(parsed.holdings);
     if (parsed.trades.length) onTrades(parsed.trades);
     setMsg(`Imported ${parsed.holdings.length} holdings, ${parsed.trades.length} transactions`);
