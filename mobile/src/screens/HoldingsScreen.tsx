@@ -2,11 +2,11 @@
  * HoldingsScreen — Main portfolio view with real data from context
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { PortfolioStackParamList } from '../../App';
@@ -16,31 +16,43 @@ type Nav = NativeStackNavigationProp<PortfolioStackParamList, 'HoldingsList'>;
 
 export default function HoldingsScreen() {
   const nav = useNavigation<Nav>();
-  const { state, result, loading, refreshPrices } = usePortfolio();
+  const { state, result, loading, refreshPrices, recompute } = usePortfolio();
   const error = result?.warnings?.join(' · ') || '';
 
-  // Use analyzed result if it has prices, otherwise fall back to raw holdings from state
-  const views = (result?.holdings?.length && result.holdings.some(h => h.last_price != null))
-    ? result.holdings
-    : (state?.holdings || []).map(h => {
+  // Re-run computation when this screen gains focus (e.g. after importing)
+  useFocusEffect(useCallback(() => {
+    recompute();
+  }, [recompute]));
+
+  // Combine analyzed result holdings with raw state holdings
+  // (result has phantom stock holdings from trades, state has parsed CAS holdings)
+  const views = useMemo(() => {
+    const map = new Map<string, any>();
+    for (const v of result?.holdings || []) {
+      map.set(v.isin + ':' + (v.folio || ''), v);
+    }
+    // Add raw state holdings if not already in result
+    for (const h of state?.holdings || []) {
+      const key = h.isin + ':' + (h.folio || '');
+      if (!map.has(key)) {
         const price = h.last_price || null;
         const cost = h.avg_cost || null;
         const qty = h.quantity || 0;
-        const cur = price ? price * qty : null;
-        const inv = cost ? cost * qty : null;
-        return {
+        map.set(key, {
           isin: h.isin, name: h.name, asset_type: h.asset_type,
           quantity: qty, folio: h.folio, symbol: h.symbol,
-          avg_cost: cost,
-          last_price: price,
+          avg_cost: cost, last_price: price,
           price_as_of: h.price_as_of || null,
-          invested: inv ? Math.round(inv * 100) / 100 : null,
-          current_value: cur ? Math.round(cur * 100) / 100 : null,
-          pnl: (cur != null && inv != null) ? Math.round((cur - inv) * 100) / 100 : null,
-          pnl_pct: null, xirr: null, cost_basis_type: 'normal',
-          xirr_excluded: true,
-        } as any;
-      });
+          invested: cost ? Math.round(cost * qty * 100) / 100 : null,
+          current_value: price ? Math.round(price * qty * 100) / 100 : null,
+          pnl: (price && cost) ? Math.round((price - cost) * qty * 100) / 100 : null,
+          pnl_pct: null, xirr: null, cost_basis_type: 'normal', xirr_excluded: true,
+        });
+      }
+    }
+    return Array.from(map.values())
+      .sort((a, b) => (b.current_value || -1e18) - (a.current_value || -1e18));
+  }, [result, state]);
 
   const totalInvested = useMemo(() => views.reduce((s, v) => s + (v.invested || 0), 0), [views]);
   const totalCurrent = useMemo(() => views.reduce((s, v) => s + (v.current_value || 0), 0), [views]);

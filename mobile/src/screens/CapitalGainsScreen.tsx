@@ -17,12 +17,13 @@ function computeGains(state: any, result: any) {
   const realised: any[] = [];
 
   for (const t of [...(state?.trades || [])].sort((a: any, b: any) => a.txn_date.localeCompare(b.txn_date))) {
+    const queueKey = t.isin + ':' + (t.folio || '');
     if (t.side === 'BUY') {
-      if (!buyQueues[t.isin]) buyQueues[t.isin] = [];
-      buyQueues[t.isin].push({ date: t.txn_date, qty: t.quantity, price: t.price });
+      if (!buyQueues[queueKey]) buyQueues[queueKey] = [];
+      buyQueues[queueKey].push({ date: t.txn_date, qty: t.quantity, price: t.price });
     } else {
       let remaining = t.quantity;
-      const queue = buyQueues[t.isin] || [];
+      const queue = buyQueues[queueKey] || [];
       while (remaining > 1e-6 && queue.length) {
         const lot = queue[0];
         const take = Math.min(lot.qty, remaining);

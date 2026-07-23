@@ -13,6 +13,7 @@ export interface PortfolioContextValue {
   onHoldings: (h: any[]) => void;
   onTrades: (t: any[]) => void;
   refreshPrices: () => void;
+  recompute: () => void;
   loading: boolean;
 }
 

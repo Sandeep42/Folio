@@ -2,7 +2,7 @@
  * App.tsx — Folio Mobile
  */
 
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -23,6 +23,7 @@ import CapitalGainsScreen from './src/screens/CapitalGainsScreen';
 import AllocationScreen from './src/screens/AllocationScreen';
 import ElssTrackerScreen from './src/screens/ElssTrackerScreen';
 import FundPnlScreen from './src/screens/FundPnlScreen';
+import MoreMenuScreen from './src/screens/MoreMenuScreen';
 import RollingReturnsScreen from './src/screens/RollingReturnsScreen';
 
 export type RootTabParamList = {
@@ -95,6 +96,7 @@ function MoreStackNav() {
       headerTintColor: '#fff',
       headerTitleStyle: { fontWeight: '600' },
     }}>
+      <MStack.Screen name="MoreMenu" component={MoreMenuScreen} options={{ title: 'More' }} />
       <MStack.Screen name="ElssTracker" component={ElssTrackerScreen} options={{ title: 'ELSS Tracker' }} />
       <MStack.Screen name="FundPnl" component={FundPnlScreen} options={{ title: 'Fund P&L' }} />
       <MStack.Screen name="RollingReturns" component={RollingReturnsScreen} options={{ title: 'Rolling Returns' }} />
@@ -107,6 +109,7 @@ export default function App() {
   const [result, setResult] = useState<AnalyzeResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const computeIdRef = useRef(0);
 
   useEffect(() => {
     loadState().then(s => { setState(s); setLoading(false); });
@@ -117,18 +120,21 @@ export default function App() {
   const compute = useCallback(async (fetchPrices: boolean) => {
     if (!state) return;
     if (!state.holdings.length && !state.trades.length) { setResult(null); return; }
+    const id = ++computeIdRef.current;
     setLoading(true); setError('');
     try {
       const res = await analyze(state.holdings, state.trades, state.ltcgRealized, fetchPrices);
+      if (id !== computeIdRef.current) return; // stale result — discard
       setResult(res);
       if (res.warnings.length) setError(res.warnings.join(' · '));
     } catch (e: any) { setError(e.message); }
-    finally { setLoading(false); }
+    finally { if (id === computeIdRef.current) setLoading(false); }
   }, [state]);
 
-  useEffect(() => { if (state) compute(true); }, [state, compute]);
+  useEffect(() => { if (state) compute(false); }, [state, compute]);
 
   const refreshPrices = useCallback(() => compute(true), [compute]);
+  const recompute = useCallback(() => compute(false), [compute]);
 
   const mergeHoldings = (incoming: any[]) =>
     setState(s => {
@@ -150,8 +156,9 @@ export default function App() {
     onHoldings: mergeHoldings,
     onTrades: addTrades,
     refreshPrices,
+    recompute,
     loading,
-  }), [state, result, loading, refreshPrices]);
+  }), [state, result, loading, refreshPrices, recompute]);
 
   if (!state) {
     return (
