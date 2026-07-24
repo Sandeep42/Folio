@@ -8,11 +8,34 @@ import {
   StyleSheet, ScrollView, ActivityIndicator,
 } from 'react-native';
 import { usePortfolio } from '../hooks/usePortfolio';
-import { parseCamsKfinCasText } from '../parsers/casPdf';
+import { parseCamsKfinCasText, ParsedHolding } from '../parsers/casPdf';
 import { preprocessPdfBox } from '../parsers/pdfboxCompat';
 import { mergeZerodhaFiles } from '../parsers/zerodha';
 import { parseTradebookCsv } from '../parsers/tradebook';
 import { pickPdf, pickCsvs, pickCsv, readPdfAsText, readFileAsText } from '../utils/filePicker';
+import { Holding } from '../models/Holding';
+import { AssetType, CostBasisType } from '../models/enums';
+
+/** Convert a ParsedHolding from the CAS parser into a full Holding model. */
+function toHolding(ph: ParsedHolding, asOf: string): Holding {
+  const lots = ph.avg_cost != null && ph.quantity > 0
+    ? [{ buy_date: asOf, quantity: ph.quantity, price: ph.avg_cost, source: 'cas' as const }]
+    : [];
+  return {
+    isin: ph.isin,
+    name: ph.name,
+    asset_type: AssetType.MUTUAL_FUND,
+    quantity: ph.quantity,
+    symbol: null,
+    folio: ph.folio,
+    amfi_code: null,
+    avg_cost: ph.avg_cost,
+    last_price: ph.last_price,
+    price_as_of: ph.price_as_of || asOf,
+    lots,
+    cost_basis_type: CostBasisType.NORMAL,
+  };
+}
 
 export default function UploadScreen() {
   const { state, onHoldings, onTrades } = usePortfolio();
@@ -35,7 +58,10 @@ export default function UploadScreen() {
     // PDFBox outputs cells on one line — pre-process if needed
     const processed = preprocessPdfBox(text);
     const parsed = parseCamsKfinCasText(processed);
-    if (parsed.holdings.length) onHoldings(parsed.holdings);
+    if (parsed.holdings.length) {
+      const asOf = parsed.as_of || new Date().toISOString().slice(0, 10);
+      onHoldings(parsed.holdings.map(ph => toHolding(ph, asOf)));
+    }
     if (parsed.trades.length) onTrades(parsed.trades);
     setMsg(`Imported ${parsed.holdings.length} holdings, ${parsed.trades.length} transactions`);
     setWarnings(parsed.warnings);
