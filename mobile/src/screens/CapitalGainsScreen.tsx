@@ -1,5 +1,5 @@
 /**
- * CapitalGainsScreen — FIFO-matched realised gains from trade history
+ * CapitalGainsScreen — Realised capital gains with separate MF/stock FIFO
  */
 
 import React, { useMemo } from 'react';
@@ -12,74 +12,66 @@ function classifyTerm(buyDate: string, sellDate: string): 'LTCG' | 'STCG' {
   return days > 365 ? 'LTCG' : 'STCG';
 }
 
-function computeGains(state: any, result: any) {
-  const buyQueues: Record<string, any[]> = {};
+function computeGains(trades: any[], useFolio: boolean): any[] {
+  const buyQ: Record<string, any[]> = {};
   const realised: any[] = [];
 
-  for (const t of [...(state?.trades || [])].sort((a: any, b: any) => a.txn_date.localeCompare(b.txn_date))) {
-    const queueKey = t.isin + ':' + (t.folio || '');
+  for (const t of [...trades].sort((a: any, b: any) => a.txn_date.localeCompare(b.txn_date))) {
+    const key = useFolio ? (t.isin + ':' + (t.folio || '')) : t.isin;
     if (t.side === 'BUY') {
-      if (!buyQueues[queueKey]) buyQueues[queueKey] = [];
-      buyQueues[queueKey].push({ date: t.txn_date, qty: t.quantity, price: t.price });
-    } else {
-      let remaining = t.quantity;
-      const queue = buyQueues[queueKey] || [];
+      if (!buyQ[key]) buyQ[key] = [];
+      buyQ[key].push({ date: t.txn_date, qty: t.quantity, price: t.price });
+    } else if (t.side === 'SELL') {
+      let remaining = t.quantity || 0;
+      if (remaining <= 0) continue;
+      const queue = buyQ[key] || [];
       while (remaining > 1e-6 && queue.length) {
         const lot = queue[0];
         const take = Math.min(lot.qty, remaining);
         const gain = (t.price - lot.price) * take;
         const term = classifyTerm(lot.date, t.txn_date);
-        realised.push({
-          sell_date: t.txn_date, buy_date: lot.date, isin: t.isin,
-          name: result?.holdings?.find((h: any) => h.isin === t.isin)?.name || t.isin,
-          quantity: take, buy_price: lot.price, sell_price: t.price,
-          gain: Math.round(gain * 100) / 100, term,
-        });
+        realised.push({ sell_date: t.txn_date, isin: t.isin, gain: Math.round(gain * 100) / 100, term });
         remaining -= take;
         lot.qty -= take;
         if (lot.qty < 1e-6) queue.shift();
       }
     }
   }
+  return realised;
+}
 
-  // Group by FY
-  const byFy: Record<string, any> = {};
+function groupFy(realised: any[]) {
+  const groups: Record<string, any> = {};
   for (const r of realised) {
-    const y = new Date(r.sell_date).getMonth() >= 3
-      ? new Date(r.sell_date).getFullYear() : new Date(r.sell_date).getFullYear() - 1;
+    const y = new Date(r.sell_date).getMonth() >= 3 ? new Date(r.sell_date).getFullYear() : new Date(r.sell_date).getFullYear() - 1;
     const fy = `FY ${y}-${String(y + 1).slice(-2)}`;
-    if (!byFy[fy]) byFy[fy] = { fy, ltcg: 0, stcg: 0, count: 0 };
-    byFy[fy][r.term === 'LTCG' ? 'ltcg' : 'stcg'] += r.gain;
-    byFy[fy].count++;
+    if (!groups[fy]) groups[fy] = { fy, ltcg: 0, stcg: 0, count: 0 };
+    groups[fy][r.term === 'LTCG' ? 'ltcg' : 'stcg'] += r.gain;
+    groups[fy].count++;
   }
-
-  return Object.values(byFy).sort((a: any, b: any) => b.fy.localeCompare(a.fy));
+  return Object.values(groups).sort((a: any, b: any) => b.fy.localeCompare(a.fy));
 }
 
 export default function CapitalGainsScreen() {
   const { state, result, loading } = usePortfolio();
-  const gains = useMemo(() => computeGains(state, result), [state, result]);
+  const gains = useMemo(() => {
+    const trades = state?.trades || [];
+    const mfTrades = trades.filter((t: any) => t.folio);
+    const stockTrades = trades.filter((t: any) => !t.folio);
+    const mfGains = computeGains(mfTrades, true);
+    const stockGains = computeGains(stockTrades, false);
+    return groupFy([...mfGains, ...stockGains]);
+  }, [state]);
 
   if (loading) return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
-
-  if (!gains.length) {
-    return (
-      <View style={styles.centered}>
-        <Text style={styles.emptyTitle}>No realised gains</Text>
-        <Text style={styles.emptyDesc}>Sell transactions will appear here grouped by financial year.</Text>
-      </View>
-    );
-  }
+  if (!gains.length) return <View style={styles.centered}><Text style={styles.emptyTitle}>No realised gains</Text><Text style={styles.emptyDesc}>Sell transactions will appear here grouped by financial year.</Text></View>;
 
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       {gains.map((fy: any, i: number) => (
         <View key={i} style={styles.card}>
           <Text style={styles.fy}>{fy.fy}</Text>
-          <Text style={styles.total}>
-            LTCG: <Text style={{ color: fy.ltcg >= 0 ? '#2e7d32' : '#d32f2f' }}>{inr(fy.ltcg)}</Text>
-            {' · '}STCG: <Text style={{ color: fy.stcg >= 0 ? '#2e7d32' : '#d32f2f' }}>{inr(fy.stcg)}</Text>
-          </Text>
+          <Text style={styles.total}>LTCG: <Text style={{color: fy.ltcg>=0?'#2e7d32':'#d32f2f'}}>{inr(fy.ltcg)}</Text> · STCG: <Text style={{color: fy.stcg>=0?'#2e7d32':'#d32f2f'}}>{inr(fy.stcg)}</Text></Text>
           <Text style={styles.count}>{fy.count} transaction(s)</Text>
         </View>
       ))}
