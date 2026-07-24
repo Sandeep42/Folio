@@ -11,6 +11,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { usePortfolio } from '../hooks/usePortfolio';
 import { PortfolioStackParamList } from '../../App';
 import { inr } from '../utils/format';
+import { key } from '../services/analysis';
 
 type Nav = NativeStackNavigationProp<PortfolioStackParamList, 'HoldingsList'>;
 
@@ -29,16 +30,16 @@ export default function HoldingsScreen() {
   const views = useMemo(() => {
     const map = new Map<string, any>();
     for (const v of result?.holdings || []) {
-      map.set(v.isin + ':' + (v.folio || ''), v);
+      map.set(key(v.isin, v.folio), v);
     }
     // Add raw state holdings if not already in result
     for (const h of state?.holdings || []) {
-      const key = h.isin + ':' + (h.folio || '');
-      if (!map.has(key)) {
+      const k = key(h.isin, h.folio);
+      if (!map.has(k)) {
         const price = h.last_price || null;
         const cost = h.avg_cost || null;
         const qty = h.quantity || 0;
-        map.set(key, {
+        map.set(k, {
           isin: h.isin, name: h.name, asset_type: h.asset_type,
           quantity: qty, folio: h.folio, symbol: h.symbol,
           avg_cost: cost, last_price: price,

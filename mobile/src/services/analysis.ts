@@ -26,7 +26,7 @@ function isStock(isin: string, symbol: string | null): boolean {
   return false;
 }
 
-function key(isin: string, folio: string | null): string {
+export function key(isin: string, folio: string | null): string {
   if (folio) {
     folio = folio.replace(ZERO_SUFFIX_RE, '').trim();
     return `${isin}:${folio}`;
