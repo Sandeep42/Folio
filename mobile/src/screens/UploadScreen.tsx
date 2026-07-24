@@ -38,11 +38,12 @@ function toHolding(ph: ParsedHolding, asOf: string): Holding {
 }
 
 export default function UploadScreen() {
-  const { state, onHoldings, onTrades } = usePortfolio();
+  const { state, onHoldings, onTrades, clearData } = usePortfolio();
   const [password, setPassword] = useState('');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   const wrap = async (fn: () => Promise<void>) => {
     setBusy(true); setMsg(''); setWarnings([]);
@@ -117,6 +118,22 @@ export default function UploadScreen() {
           {busy ? <ActivityIndicator color="#fff" /> : <Text style={styles.btnText}>Pick CSV</Text>}
         </TouchableOpacity>
       </View>
+
+      {/* DATA section */}
+      <View style={styles.section}>
+        <Text style={styles.title}>Data</Text>
+        <Text style={styles.desc}>{state?.holdings.length || 0} holdings · {state?.trades.length || 0} trades</Text>
+        <TouchableOpacity
+          style={[styles.clearBtn, confirmClear && styles.clearBtnConfirm]}
+          onPress={() => {
+            if (!confirmClear) { setConfirmClear(true); setTimeout(() => setConfirmClear(false), 4000); return; }
+            clearData(); setConfirmClear(false); setMsg('Data cleared');
+          }}>
+          <Text style={[styles.clearBtnText, confirmClear && styles.clearBtnTextConfirm]}>
+            {confirmClear ? 'Tap again to confirm' : 'Clear all data'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </ScrollView>
   );
 }
@@ -132,4 +149,8 @@ const styles = StyleSheet.create({
   input: { borderWidth: 1, borderColor: '#ddd', borderRadius: 8, padding: 10, fontSize: 14, color: '#000' },
   btn: { backgroundColor: '#1976d2', borderRadius: 8, padding: 12, alignItems: 'center' },
   btnText: { color: '#fff', fontWeight: '600', fontSize: 14 },
+  clearBtn: { backgroundColor: '#fce4ec', borderRadius: 8, padding: 14, alignItems: 'center', marginTop: 4 },
+  clearBtnConfirm: { backgroundColor: '#d32f2f' },
+  clearBtnText: { color: '#c62828', fontWeight: '600', fontSize: 14 },
+  clearBtnTextConfirm: { color: '#fff' },
 });

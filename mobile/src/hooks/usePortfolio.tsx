@@ -15,6 +15,7 @@ export interface PortfolioContextValue {
   refreshPrices: () => void;
   recompute: () => void;
   loading: boolean;
+  clearData: () => void;
 }
 
 export const PortfolioCtx = createContext<PortfolioContextValue | null>(null);

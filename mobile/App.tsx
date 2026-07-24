@@ -6,7 +6,7 @@ import React, { useEffect, useState, useCallback, useMemo, useRef } from 'react'
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
-import { ActivityIndicator, View, StyleSheet, Text, StatusBar, Platform } from 'react-native';
+import { ActivityIndicator, View, StyleSheet, Text, StatusBar } from 'react-native';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
@@ -18,20 +18,11 @@ import { PortfolioCtx } from './src/hooks/usePortfolio';
 import UploadScreen from './src/screens/UploadScreen';
 import HoldingsScreen from './src/screens/HoldingsScreen';
 import HoldingDetailScreen from './src/screens/HoldingDetailScreen';
-import TaxHarvestScreen from './src/screens/TaxHarvestScreen';
-import CapitalGainsScreen from './src/screens/CapitalGainsScreen';
 import AllocationScreen from './src/screens/AllocationScreen';
-import ElssTrackerScreen from './src/screens/ElssTrackerScreen';
-import FundPnlScreen from './src/screens/FundPnlScreen';
-import MoreMenuScreen from './src/screens/MoreMenuScreen';
-import RollingReturnsScreen from './src/screens/RollingReturnsScreen';
 
 export type RootTabParamList = {
   Portfolio: undefined;
-  TaxHarvest: undefined;
-  CapitalGains: undefined;
   Allocation: undefined;
-  More: undefined;
   Upload: undefined;
 };
 
@@ -40,16 +31,21 @@ export type PortfolioStackParamList = {
   HoldingDetail: { holding: HoldingView };
 };
 
-export type MoreStackParamList = {
-  MoreMenu: undefined;
-  ElssTracker: undefined;
-  FundPnl: undefined;
-  RollingReturns: undefined;
-};
-
 const Tab = createBottomTabNavigator<RootTabParamList>();
 const PStack = createNativeStackNavigator<PortfolioStackParamList>();
-const MStack = createNativeStackNavigator<MoreStackParamList>();
+
+function PortfolioStackNav() {
+  return (
+    <PStack.Navigator screenOptions={{
+      headerStyle: { backgroundColor: '#1976d2' },
+      headerTintColor: '#fff',
+      headerTitleStyle: { fontWeight: '600' },
+    }}>
+      <PStack.Screen name="HoldingsList" component={HoldingsScreen} options={{ title: 'Portfolio' }} />
+      <PStack.Screen name="HoldingDetail" component={HoldingDetailScreen} options={{ title: 'Detail' }} />
+    </PStack.Navigator>
+  );
+}
 
 function TabNav() {
   const insets = useSafeAreaInsets();
@@ -65,42 +61,11 @@ function TabNav() {
         tabBarStyle: { paddingBottom: insets.bottom + 4, paddingTop: 4, height: 56 + insets.bottom },
       }}>
       <Tab.Screen name="Portfolio" options={{ headerShown: false, tabBarLabel: 'Portfolio', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="finance" size={22} color={color} /> }} children={() => <PortfolioStackNav />} />
-      <Tab.Screen name="TaxHarvest" options={{ title: 'Harvest', tabBarLabel: 'Harvest', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="leaf" size={22} color={color} /> }} children={() => <TaxHarvestScreen />} />
-      <Tab.Screen name="CapitalGains" options={{ title: 'Gains', tabBarLabel: 'Gains', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="trending-up" size={22} color={color} /> }} children={() => <CapitalGainsScreen />} />
       <Tab.Screen name="Allocation" options={{ title: 'Allocation', tabBarLabel: 'Allocation', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="pie-chart" size={22} color={color} /> }} children={() => <AllocationScreen />} />
-      <Tab.Screen name="More" options={{ headerShown: false, tabBarLabel: 'More', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="dots-horizontal" size={22} color={color} /> }} children={() => <MoreStackNav />} />
       <Tab.Screen name="Upload" options={{ title: 'Import', tabBarLabel: 'Import', tabBarIcon: ({ color }) => <MaterialCommunityIcons name="file-upload" size={22} color={color} /> }}>
         {() => <UploadScreen />}
       </Tab.Screen>
     </Tab.Navigator>
-  );
-}
-
-function PortfolioStackNav() {
-  return (
-    <PStack.Navigator screenOptions={{
-      headerStyle: { backgroundColor: '#1976d2' },
-      headerTintColor: '#fff',
-      headerTitleStyle: { fontWeight: '600' },
-    }}>
-      <PStack.Screen name="HoldingsList" component={HoldingsScreen} options={{ title: 'Portfolio' }} />
-      <PStack.Screen name="HoldingDetail" component={HoldingDetailScreen} options={{ title: 'Detail' }} />
-    </PStack.Navigator>
-  );
-}
-
-function MoreStackNav() {
-  return (
-    <MStack.Navigator screenOptions={{
-      headerStyle: { backgroundColor: '#1976d2' },
-      headerTintColor: '#fff',
-      headerTitleStyle: { fontWeight: '600' },
-    }}>
-      <MStack.Screen name="MoreMenu" component={MoreMenuScreen} options={{ title: 'More' }} />
-      <MStack.Screen name="ElssTracker" component={ElssTrackerScreen} options={{ title: 'ELSS Tracker' }} />
-      <MStack.Screen name="FundPnl" component={FundPnlScreen} options={{ title: 'Fund P&L' }} />
-      <MStack.Screen name="RollingReturns" component={RollingReturnsScreen} options={{ title: 'Rolling Returns' }} />
-    </MStack.Navigator>
   );
 }
 
@@ -124,7 +89,7 @@ export default function App() {
     setLoading(true); setError('');
     try {
       const res = await analyze(state.holdings, state.trades, state.ltcgRealized, fetchPrices);
-      if (id !== computeIdRef.current) return; // stale result — discard
+      if (id !== computeIdRef.current) return;
       setResult(res);
       if (res.warnings.length) setError(res.warnings.join(' · '));
     } catch (e: any) { setError(e.message); }
@@ -150,22 +115,20 @@ export default function App() {
   const addTrades = (trades: any[]) =>
     setState(s => s ? { ...s, trades: [...s.trades, ...trades] } : s);
 
+  const clearData = useCallback(() => {
+    setState({ holdings: [], trades: [], ltcgRealized: 0 });
+    setResult(null);
+    import('./src/storage').then(m => m.clearState());
+  }, []);
+
   const ctx = useMemo(() => ({
-    state: state!, result,
-    setState,
-    onHoldings: mergeHoldings,
-    onTrades: addTrades,
-    refreshPrices,
-    recompute,
-    loading,
+    state: state!, result, setState,
+    onHoldings: mergeHoldings, onTrades: addTrades,
+    refreshPrices, recompute, loading, clearData,
   }), [state, result, loading, refreshPrices, recompute]);
 
   if (!state) {
-    return (
-      <View style={styles.centered}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+    return <View style={styles.centered}><ActivityIndicator size="large" /></View>;
   }
 
   return (
